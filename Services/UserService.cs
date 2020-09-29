@@ -8,35 +8,27 @@ using System.Security.Claims;
 using System.Text;
 using ATTM_API.Models;
 using ATTM_API.Helpers;
-using ATTM_API.Models;
+using MongoDB.Driver;
 
 namespace ATTM_API.Services
 {
-    public interface IUserService
-    {
-        AuthenticateResponse Authenticate(AuthenticateRequest model);
-        IEnumerable<User> GetAll();
-        User GetById(int id);
-    }
-
-    public class UserService : IUserService
+    public class UserService
     {
         // users hardcoded for simplicity, store in a db with hashed passwords in production applications
-        private List<User> _users = new List<User>
-        {
-            new User { Id = 1, FirstName = "Test", LastName = "User", Username = "test", Password = "test" }
-        };
-
+        private readonly IMongoCollection<User> _users;
         private readonly AppSettings _appSettings;
-
-        public UserService(IOptions<AppSettings> appSettings)
+        public UserService(IOptions<AppSettings> appSettings, IATTMDatabaseSettings settings)
         {
             _appSettings = appSettings.Value;
+            var client = new MongoClient(settings.ConnectionString);
+            var database = client.GetDatabase(settings.DatabaseName);
+
+            _users = database.GetCollection<User>(settings.UsersCollectionName);
         }
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model)
         {
-            var user = _users.SingleOrDefault(x => x.Username == model.Username && x.Password == model.Password);
+            var user = _users.Find<User>(user => user.Username == model.Username && user.Password == model.Password).FirstOrDefault();
 
             // return null if user not found
             if (user == null) return null;
@@ -47,14 +39,12 @@ namespace ATTM_API.Services
             return new AuthenticateResponse(user, token);
         }
 
-        public IEnumerable<User> GetAll()
-        {
-            return _users;
-        }
+        public List<User> GetAll() =>
+            _users.Find(user => true).ToList();
 
-        public User GetById(int id)
+        public User GetById(string id)
         {
-            return _users.FirstOrDefault(x => x.Id == id);
+            return _users.Find<User>(u => u.Id == id).FirstOrDefault();
         }
 
         // helper methods

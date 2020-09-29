@@ -8,9 +8,9 @@ namespace ATTM_API.Controllers
     [Route("api/[controller]")]
     public class UsersController : ControllerBase
     {
-        private IUserService _userService;
+        private UserService _userService;
 
-        public UsersController(IUserService userService)
+        public UsersController(UserService userService)
         {
             _userService = userService;
         }

@@ -37,13 +37,10 @@ namespace ATTM_API
                 sp.GetRequiredService<IOptions<ATTMDatabaseSettings>>().Value);
 
             services.AddSingleton<CategoryService>();
+            services.AddSingleton<UserService>();
             services.AddControllers()
                 .AddNewtonsoftJson(options => options.UseMemberCasing());
             services.AddControllers();
-            // configure DI for application services
-            services.AddScoped<IUserService, UserService>();
-            
-
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
