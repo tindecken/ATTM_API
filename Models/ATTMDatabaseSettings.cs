@@ -3,6 +3,7 @@ namespace ATTM_API.Models
     public interface IATTMDatabaseSettings
     {
         string CategoriesCollectionName { get; set; }
+        string TestSuitesCollectionName { get; set; }
         string UsersCollectionName { get; set; }
         string ConnectionString { get; set; }
         string DatabaseName { get; set; }
@@ -10,6 +11,8 @@ namespace ATTM_API.Models
     public class ATTMDatabaseSettings : IATTMDatabaseSettings
     {
         public string CategoriesCollectionName { get; set; }
+
+        public string TestSuitesCollectionName { get; set; }
         public string UsersCollectionName { get; set; }
         public string ConnectionString { get; set; }
         public string DatabaseName { get; set; }

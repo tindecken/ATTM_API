@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
@@ -9,11 +10,13 @@ namespace ATTM_API.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-        [BsonElement("Name")]
-        [JsonProperty("Name")]
+        [BsonElement("name")]
+        [BsonRequired]
+        [JsonRequired]
         public string CategoryName { get; set; } 
+        [BsonElement("description")]
         public string Description { get; set; }
-        public string Author { get; set; }
-
+        [BsonElement("_id_TestSuites")]
+        public List<string> _id_TestSuites { get; set; }
     }
 }

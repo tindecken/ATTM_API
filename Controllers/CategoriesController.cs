@@ -16,7 +16,6 @@ namespace ATTM_API.Controllers
             _categoryService = categoryService;
         }
 
-        [Authorize]
         [HttpGet]
         public ActionResult<List<Category>> Get() =>
             _categoryService.Get();
@@ -37,9 +36,24 @@ namespace ATTM_API.Controllers
         [HttpPost]
         public ActionResult<Category> Create(Category category)
         {
-            _categoryService.Create(category);
+            var result = _categoryService.Create(category);
+            if(result != null) {
+                return CreatedAtRoute("GetCategory", new { id = category.Id.ToString() }, category);
+            }else {
+                return StatusCode(409, $"Category '{category.CategoryName}' already exists.");
+            }
+        }
 
-            return CreatedAtRoute("GetCategory", new { id = category.Id.ToString() }, category);
+
+        [HttpPost("{id:length(24)}/testsuites")]
+        public ActionResult<Category> CreateTestSuite([FromRoute] string id, TestSuite testSuite)
+        {
+            var result = _categoryService.CreateTestSuite(id, testSuite);
+            if(result != null) {
+                return Ok(testSuite);
+            }else {
+                return StatusCode(409, $"TestSuite '{testSuite.TestSuiteName}' already exists.");
+            }
         }
 
         [HttpPut("{id:length(24)}")]
