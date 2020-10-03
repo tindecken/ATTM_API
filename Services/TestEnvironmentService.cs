@@ -28,7 +28,17 @@ namespace ATTM_API.Services
             await _testenvironments.Find<TestEnvironment>(tv => tv.Id == id).FirstOrDefaultAsync();
         
         public async Task<TestEnvironment> Create(TestEnvironment testEnv) {
-
+            try {
+                var existingEnv = await _testenvironments.Find<TestEnvironment>(tv => tv.TestEnvironmentName == testEnv.TestEnvironmentName).FirstOrDefaultAsync();
+                if(existingEnv == null) {
+                    await _testenvironments.InsertOneAsync(testEnv);
+                    return testEnv;
+                }else{
+                    return null;
+                }
+            } catch (Exception ex) {
+                throw ex;   
+            }
         }
 
     }

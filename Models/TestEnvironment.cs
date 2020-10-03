@@ -19,15 +19,11 @@ namespace ATTM_API.Models
     }
     public class TestEnvCategory 
     {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
         public string Name { get; set; }
         public string Description { get; set; } = string.Empty;
         public List<TestEnvNode> TestEnvNodes { get; set; } = new List<TestEnvNode>();
     }
     public class TestEnvNode {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
         public string Name { get; set; }
         public string Value { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
