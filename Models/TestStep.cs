@@ -1,11 +1,10 @@
-using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 
 namespace ATTM_API.Models
 {
-    public class TestSuite
+    public class TestStep
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -13,9 +12,8 @@ namespace ATTM_API.Models
         [BsonElement("name")]
         [JsonRequired]
         [JsonProperty("Name")]
-        public string TestSuiteName { get; set; } 
+        public string TestStepName { get; set; } 
         public string Description { get; set; } = string.Empty;
-        public List<string> TestGroups { get; set; } = new List<string>();
 
     }
 }

@@ -37,6 +37,9 @@ namespace ATTM_API
                 sp.GetRequiredService<IOptions<ATTMDatabaseSettings>>().Value);
 
             services.AddSingleton<CategoryService>();
+            services.AddSingleton<TestSuiteService>();
+            services.AddSingleton<TestGroupService>();
+            services.AddSingleton<TestCaseService>();
             services.AddSingleton<UserService>();
             services.AddControllers()
                 .AddNewtonsoftJson(options => options.UseMemberCasing());

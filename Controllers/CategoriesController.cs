@@ -46,7 +46,7 @@ namespace ATTM_API.Controllers
         }
 
 
-        [HttpPost("{catId}/testsuites")]
+        [HttpPost("{catId:length(24)}/testsuites")]
         public async Task<ActionResult<TestSuite>> CreateTestSuite(string catId, TestSuite testSuite)
         {
             var result = await _categoryService.CreateTestSuite(catId, testSuite);
