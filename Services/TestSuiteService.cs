@@ -19,10 +19,9 @@ namespace ATTM_API.Services
             _testsuites = database.GetCollection<TestSuite>(settings.TestSuitesCollectionName);
         }
 
-        public List<TestSuite> Get() =>
-            _testsuites.Find(new BsonDocument()).ToList();
+        public async Task<List<TestSuite>> Get() =>
+            await _testsuites.Find(new BsonDocument()).ToListAsync();
             
-
         public async Task<TestSuite> Get(string id) =>
             await _testsuites.Find<TestSuite>(ts => ts.Id == id).FirstOrDefaultAsync();
     }
