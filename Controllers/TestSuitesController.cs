@@ -18,8 +18,8 @@ namespace ATTM_API.Controllers
         }
 
         [HttpGet]
-        public ActionResult<List<TestSuite>> Get() =>
-            _testSuiteService.Get();
+        public async Task<ActionResult<List<TestSuite>>> Get() =>
+            await _testSuiteService.Get();
 
         [HttpGet("{id:length(24)}", Name = "GetTestSuite")]
         public async Task<ActionResult<TestSuite>> Get(string id)
