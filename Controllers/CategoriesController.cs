@@ -2,6 +2,7 @@ using ATTM_API.Models;
 using ATTM_API.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace ATTM_API.Controllers
 {
@@ -21,9 +22,9 @@ namespace ATTM_API.Controllers
             _categoryService.Get();
 
         [HttpGet("{id:length(24)}", Name = "GetCategory")]
-        public ActionResult<Category> Get(string id)
+        public async Task<ActionResult<Category>> Get(string id)
         {
-            var category = _categoryService.Get(id);
+            var category = await _categoryService.Get(id);
 
             if (category == null)
             {
@@ -34,9 +35,9 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost]
-        public ActionResult<Category> Create(Category category)
+        public async Task<ActionResult<Category>> Create(Category category)
         {
-            var result = _categoryService.Create(category);
+            var result = await _categoryService.Create(category);
             if(result != null) {
                 return CreatedAtRoute("GetCategory", new { id = category.Id.ToString() }, category);
             }else {
@@ -45,12 +46,12 @@ namespace ATTM_API.Controllers
         }
 
 
-        [HttpPost("{id:length(24)}/testsuites")]
-        public ActionResult<Category> CreateTestSuite([FromRoute] string id, TestSuite testSuite)
+        [HttpPost("{catId}/testsuites")]
+        public async Task<ActionResult<TestSuite>> CreateTestSuite(string catId, TestSuite testSuite)
         {
-            var result = _categoryService.CreateTestSuite(id, testSuite);
+            var result = await _categoryService.CreateTestSuite(catId, testSuite);
             if(result != null) {
-                return Ok(testSuite);
+                return CreatedAtRoute("GetTestSuite", new { controller = "testsuites", id = result.Id }, testSuite);
             }else {
                 return StatusCode(409, $"TestSuite '{testSuite.TestSuiteName}' already exists.");
             }
@@ -72,15 +73,14 @@ namespace ATTM_API.Controllers
         }
 
         [HttpDelete("{id:length(24)}")]
-        public IActionResult Delete(string id)
+        public async Task<IActionResult> Delete(string id)
         {
-            var category = _categoryService.Get(id);
+            var category = await _categoryService.Get(id);
 
             if (category == null)
             {
                 return NotFound();
             }
-
             _categoryService.Remove(category.Id);
 
             return NoContent();

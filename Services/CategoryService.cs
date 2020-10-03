@@ -1,6 +1,7 @@
 using ATTM_API.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -12,54 +13,57 @@ namespace ATTM_API.Services
         private readonly IMongoCollection<Category> _categories;
         private readonly IMongoCollection<TestSuite> _testsuites;
 
-        public async CategoryService(IATTMDatabaseSettings settings)
+        public CategoryService(IATTMDatabaseSettings settings)
         {
             var client = new MongoClient(settings.ConnectionString);
             var database = client.GetDatabase(settings.DatabaseName);
-            var options = new CreateIndexOptions() { Unique = true };
-            var field = new StringFieldDefinition<Category>("name");
-            var indexDefinition = new IndexKeysDefinitionBuilder<Category>().Ascending(field);
 
-            var indexModel = new CreateIndexModel<Category>(indexDefinition,options);
-            await database.GetCollection<Category>(settings.TestSuitesCollectionName).Indexes.CreateOneAsync(indexModel);
-
-
-            _testsuites = await database.GetCollection<TestSuite>(settings.TestSuitesCollectionName);
+            _categories = database.GetCollection<Category>(settings.CategoriesCollectionName);
+            _testsuites = database.GetCollection<TestSuite>(settings.TestSuitesCollectionName);
         }
 
         public List<Category> Get() =>
             _categories.Find(new BsonDocument()).ToList();
             
 
-        public Category Get(string id) =>
-            _categories.Find<Category>(category => category.Id == id).FirstOrDefault();
+        public async Task<Category> Get(string id) =>
+            await _categories.Find<Category>(category => category.Id == id).FirstOrDefaultAsync();
 
-        public Category Create(Category category)
+        public async Task<Category> Create(Category category)
         {
-            var existingCat = _categories.Find<Category>(cat => cat.CategoryName == category.CategoryName).FirstOrDefault();
-            if(existingCat == null) {
-                _categories.InsertOne(category);
-                return category;
-            }else{
-                return null;
-            }
-        }
-
-        public TestSuite CreateTestSuite(string catId, TestSuite ts)
-        {
-            //Check testsuite is already exist or not
-            var existingTS = _testsuites.Find<TestSuite>(t => t.TestSuiteName == ts.TestSuiteName).FirstOrDefault();
-            if(existingTS != null){
-                return null;
-            }else {
-                _testsuites.InsertOne(ts);
-                var filter = Builders<Category>.Filter.Eq(cat => cat.Id, catId);
-                var update = Builders<Category>.Update.Push<string>("_id_testSuites", ts.Id);
-
-                _categories.FindOneAndUpdate(filter, update);
-                return ts;
+            try {
+                var existingCat = await _categories.Find<Category>(cat => cat.CategoryName == category.CategoryName).FirstOrDefaultAsync();
+                if(existingCat == null) {
+                    await _categories.InsertOneAsync(category);
+                    return category;
+                }else{
+                    return null;
+                }
+            } catch (Exception ex) {
+                throw ex;   
             }
             
+        }
+
+        public async Task<TestSuite> CreateTestSuite(string catId, TestSuite ts)
+        {
+            try
+            {
+                var existingTS = await _testsuites.Find<TestSuite>(t => t.TestSuiteName == ts.TestSuiteName).FirstOrDefaultAsync();
+                if(existingTS != null){
+                    return null;
+                }else {
+                    await _testsuites.InsertOneAsync(ts);
+                    var filter = Builders<Category>.Filter.Eq(cat => cat.Id, catId);
+                    var update = Builders<Category>.Update.Push<string>(cat => cat.TestSuites, ts.Id);
+                    await _categories.FindOneAndUpdateAsync(filter, update);
+                    return ts;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;   
+            }
         }
 
         public void Update(string id, Category categoryIn) =>

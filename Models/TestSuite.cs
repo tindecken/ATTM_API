@@ -9,10 +9,11 @@ namespace ATTM_API.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-        [BsonElement("Name")]
+        [BsonElement("name")]
+        [JsonRequired]
         [JsonProperty("Name")]
         public string TestSuiteName { get; set; } 
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
     }
 }
