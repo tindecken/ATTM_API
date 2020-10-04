@@ -6,7 +6,7 @@ using Newtonsoft.Json;
 
 namespace ATTM_API.Models
 {
-    public class TestCase
+    public class Keyword
     {
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
@@ -15,20 +15,19 @@ namespace ATTM_API.Models
         [JsonRequired]
         [JsonProperty("Name")]
         public string Name { get; set; } 
-        public TestType Type { get; set; } = 0;
-        public bool isPrimary { get; set; } = false;
-        public bool isDisabled { get; set; } = false;
-        public bool isDeleted { get; set; } = false;
-        public string WorkItem { get; set; } = string.Empty;
         public User Owner { get; set; }
         public DateTime createdDate { get; set; } = DateTime.UtcNow;
         public DateTime lastUpdatedDate { get; set; } = DateTime.UtcNow;
-        public TestStatus lastRunningStatus { get; set; } = 0;
         public User lastUpdatedUser { get; set; }
+        public string UpdatedMessage { get; set; }
         public string Description { get; set; } = string.Empty;
-        public int TimeOutInMinutes { get; set; } = 60;
-        public TestCase DependOn { get; set; }
-        public List<string> TestSteps { get; set; } = new List<string>();
+        public List<TestParam> Params { get; set; } = new List<TestParam>();
+        public string ImageURL { get; set; }
+        public string WorkItem { get; set; }
+        public string Category { get; set; }
+        public string Feature { get; set; }
+        public bool isDisabled { get; set; } = false;
+        public TestAUTType AUTType { get; set; } = 0;
 
     }
 }

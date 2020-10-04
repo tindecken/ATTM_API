@@ -41,7 +41,7 @@ namespace ATTM_API.Controllers
             if(result != null) {
                 return CreatedAtRoute("GetCategory", new { id = category.Id.ToString() }, category);
             }else {
-                return StatusCode(409, $"Category '{category.CategoryName}' already exists.");
+                return StatusCode(409, $"Category '{category.Name}' already exists.");
             }
         }
 
@@ -53,7 +53,7 @@ namespace ATTM_API.Controllers
             if(result != null) {
                 return CreatedAtRoute("GetTestSuite", new { controller = "testsuites", id = result.Id }, testSuite);
             }else {
-                return StatusCode(409, $"TestSuite '{testSuite.TestSuiteName}' already exists.");
+                return StatusCode(409, $"TestSuite '{testSuite.Name}' already exists.");
             }
         }
 

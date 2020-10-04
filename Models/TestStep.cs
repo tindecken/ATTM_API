@@ -12,8 +12,9 @@ namespace ATTM_API.Models
         [BsonElement("name")]
         [JsonRequired]
         [JsonProperty("Name")]
-        public string TestStepName { get; set; } 
+        public string Name { get; set; } 
         public string Description { get; set; } = string.Empty;
+        public int MyProperty { get; set; }
 
     }
 }

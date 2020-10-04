@@ -32,7 +32,7 @@ namespace ATTM_API.Services
         public async Task<Category> Create(Category category)
         {
             try {
-                var existingCat = await _categories.Find<Category>(cat => cat.CategoryName == category.CategoryName).FirstOrDefaultAsync();
+                var existingCat = await _categories.Find<Category>(cat => cat.Name == category.Name).FirstOrDefaultAsync();
                 if(existingCat == null) {
                     await _categories.InsertOneAsync(category);
                     return category;
@@ -49,7 +49,7 @@ namespace ATTM_API.Services
         {
             try
             {
-                var existingTS = await _testsuites.Find<TestSuite>(t => t.TestSuiteName == ts.TestSuiteName).FirstOrDefaultAsync();
+                var existingTS = await _testsuites.Find<TestSuite>(t => t.Name == ts.Name).FirstOrDefaultAsync();
                 if(existingTS != null){
                     return null;
                 }else {
