@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 
 namespace ATTM_API.Models
 {
+    [BsonIgnoreExtraElements]
     public class TestBuffer
     {
         public string Name { get; set; } 

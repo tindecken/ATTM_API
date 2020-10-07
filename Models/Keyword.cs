@@ -6,6 +6,7 @@ using Newtonsoft.Json;
 
 namespace ATTM_API.Models
 {
+    [BsonIgnoreExtraElements]
     public class Keyword
     {
         [BsonId]
