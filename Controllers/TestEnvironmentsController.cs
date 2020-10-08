@@ -41,7 +41,7 @@ namespace ATTM_API.Controllers
             if(result != null) {
                 return CreatedAtRoute("GetTestEnvironment", new { id = testEnv.Id.ToString() }, testEnv);
             }else {
-                return StatusCode(409, $"Test Environment '{testEnv.TestEnvironmentName}' already exists.");
+                return StatusCode(409, $"Test Environment '{testEnv.Name}' already exists.");
             }
         }
     }

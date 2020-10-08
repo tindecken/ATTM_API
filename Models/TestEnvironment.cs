@@ -11,22 +11,21 @@ namespace ATTM_API.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-        [BsonElement("name")]
         [JsonRequired]
-        [JsonProperty("Name")]
-        public string TestEnvironmentName { get; set; } 
+        public string Name { get; set; } 
         public string Description { get; set; } = string.Empty;
-        public List<TestEnvCategory> TestEnvCategories { get; set; } = new List<TestEnvCategory>();
+        public List<TestEnvCategory> Categories { get; set; } = new List<TestEnvCategory>();
     }
     public class TestEnvCategory 
     {
         public string Name { get; set; }
         public string Description { get; set; } = string.Empty;
-        public List<TestEnvNode> TestEnvNodes { get; set; } = new List<TestEnvNode>();
+        public List<TestEnvNode> Nodes { get; set; } = new List<TestEnvNode>();
     }
     public class TestEnvNode {
         public string Name { get; set; }
         public string Value { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
+        public string ExampleValue { get; set; } = string.Empty;
     }
 }
