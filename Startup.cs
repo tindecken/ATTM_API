@@ -29,6 +29,7 @@ namespace ATTM_API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            services.AddCors();
             // requires using Microsoft.Extensions.Options
             services.Configure<ATTMDatabaseSettings>(
                 Configuration.GetSection(nameof(ATTMDatabaseSettings)));
@@ -55,11 +56,7 @@ namespace ATTM_API
                 app.UseDeveloperExceptionPage();
             }
 
-            app.UseHttpsRedirection();
-
             app.UseRouting();
-
-            // app.UseAuthorization();
 
             // global cors policy
             app.UseCors(x => x
@@ -69,6 +66,8 @@ namespace ATTM_API
 
             // custom jwt auth middleware
             app.UseMiddleware<JwtMiddleware>();
+
+            
 
             app.UseEndpoints(endpoints =>
             {

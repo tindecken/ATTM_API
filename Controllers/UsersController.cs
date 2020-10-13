@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using ATTM_API.Models;
 using ATTM_API.Services;
+using Microsoft.AspNetCore.Cors;
 
 namespace ATTM_API.Controllers
 {
@@ -16,6 +17,7 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost("authenticate")]
+        [EnableCors]
         public IActionResult Authenticate(AuthenticateRequest model)
         {
             var response = _userService.Authenticate(model);
