@@ -17,7 +17,6 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost("authenticate")]
-        [EnableCors]
         public IActionResult Authenticate(AuthenticateRequest model)
         {
             var response = _userService.Authenticate(model);
