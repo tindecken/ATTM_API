@@ -4,18 +4,20 @@ namespace ATTM_API.Models
 {
     public class AuthenticateResponse
     {
-        public string Id { get; set; }
-        public string Email { get; set; }
-        public string Username { get; set; }
-        public string Token { get; set; }
+        public string id { get; set; }
+        public string email { get; set; }
+        public string role { get; set; }
+        public string username { get; set; }
+        public string token { get; set; }
 
 
-        public AuthenticateResponse(User user, string token)
+        public AuthenticateResponse(User user, string resToken)
         {
-            Id = user.Id;
-            Email = user.Email;
-            Username = user.Username;
-            Token = token;
+            id = user.Id;
+            email = user.Email;
+            role = user.Role;
+            username = user.Username;
+            token = resToken;
         }
     }
 }

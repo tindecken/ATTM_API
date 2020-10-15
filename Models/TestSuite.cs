@@ -13,10 +13,13 @@ namespace ATTM_API.Models
         public string Id { get; set; }
         [BsonElement("name")]
         [JsonRequired]
-        [JsonProperty("Name")]
-        public string Name { get; set; } 
+        [JsonProperty("name")]
+        public string Name { get; set; }
+        [BsonElement("description")]
         public string Description { get; set; } = string.Empty;
+        [BsonElement("workitem")]
         public string WorkItem { get; set; } = string.Empty;
+        [BsonElement("testgroups")]
         public List<string> TestGroups { get; set; } = new List<string>();
 
     }
