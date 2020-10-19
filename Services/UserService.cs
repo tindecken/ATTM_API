@@ -30,7 +30,7 @@ namespace ATTM_API.Services
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model)
         {
-            log.Info($"user: {JsonConvert.SerializeObject(model)}");
+            log.Info($"User: {JsonConvert.SerializeObject(model)}");
             var user = _users.Find<User>(user => user.Username == model.Username && user.Password == model.Password).FirstOrDefault();
 
             // return null if user not found
