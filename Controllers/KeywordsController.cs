@@ -21,6 +21,10 @@ namespace ATTM_API.Controllers
         public ActionResult<List<Keyword>> Get() =>
             _keywordService.Get();
 
+        [HttpGet("refresh")]
+        public void Refresh() =>
+            _keywordService.Refresh();
+
         [HttpGet("{id:length(24)}", Name = "GetKeyword")]
         public async Task<ActionResult<Keyword>> Get(string id)
         {

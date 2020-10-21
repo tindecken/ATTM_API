@@ -18,7 +18,7 @@ namespace ATTM_API.Services
         // users hardcoded for simplicity, store in a db with hashed passwords in production applications
         private readonly IMongoCollection<User> _users;
         private readonly AppSettings _appSettings;
-        private static readonly log4net.ILog log = log4net.LogManager.GetLogger(typeof(Program));
+        private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
         public UserService(IOptions<AppSettings> appSettings, IATTMDatabaseSettings settings)
         {
             _appSettings = appSettings.Value;
@@ -30,7 +30,7 @@ namespace ATTM_API.Services
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model)
         {
-            log.Info($"User: {JsonConvert.SerializeObject(model)}");
+            Logger.Info($"User: {JsonConvert.SerializeObject(model)}");
             var user = _users.Find<User>(user => user.Username == model.Username && user.Password == model.Password).FirstOrDefault();
 
             // return null if user not found
