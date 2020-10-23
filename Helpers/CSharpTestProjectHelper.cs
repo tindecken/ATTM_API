@@ -56,16 +56,16 @@ namespace ATTM_API.Helpers
             {
                 //StringBuilder sb = new StringBuilder();
                 //StringWriter sw = new StringWriter(sb);
-                using (StreamWriter file = File.CreateText(@"c:\temp\keywordss.json"))
+                using (StreamWriter file = File.CreateText(@"c:\temp\keywords.json"))
                 using (JsonTextWriter writer = new JsonTextWriter(file))
                 {
                     writer.Formatting = Formatting.None;
                     writer.WriteStartObject();
                     writer.WritePropertyName("_id");
                     writer.WriteRawValue($"ObjectId(\"{ObjectId.GenerateNewId()}\")");
-                    writer.WritePropertyName("Refresh_Date");
+                    writer.WritePropertyName("refreshDate");
                     writer.WriteValue(DateTime.UtcNow);
-                    writer.WritePropertyName("Categories");     //Start Categories
+                    writer.WritePropertyName("categories");     //Start Categories
                     writer.WriteStartArray();
 
                     DirectoryInfo diKeywordFolder = new DirectoryInfo(sKeyWordsFolder);
