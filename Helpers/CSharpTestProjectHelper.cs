@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using MongoDB.Bson;
 using Newtonsoft.Json;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -55,11 +56,13 @@ namespace ATTM_API.Helpers
             {
                 //StringBuilder sb = new StringBuilder();
                 //StringWriter sw = new StringWriter(sb);
-                using (Stream file = File.CreateText(@"c:\temp\keywords.json"))
-                using (BsonWriter writer = new BsonWriter(file))
+                using (StreamWriter file = File.CreateText(@"c:\temp\keywordss.json"))
+                using (JsonTextWriter writer = new JsonTextWriter(file))
                 {
-                    writer.Formatting = Formatting.Indented;
+                    writer.Formatting = Formatting.None;
                     writer.WriteStartObject();
+                    writer.WritePropertyName("_id");
+                    writer.WriteRawValue($"ObjectId(\"{ObjectId.GenerateNewId()}\")");
                     writer.WritePropertyName("Refresh_Date");
                     writer.WriteValue(DateTime.UtcNow);
                     writer.WritePropertyName("Categories");     //Start Categories

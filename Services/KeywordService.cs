@@ -1,10 +1,12 @@
 using ATTM_API.Helpers;
 using ATTM_API.Models;
 using MongoDB.Bson;
+using MongoDB.Bson.IO;
+using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -28,11 +30,22 @@ namespace ATTM_API.Services
         public async Task<Keyword> Get(string id) =>
             await _keywords.Find<Keyword>(keyword => keyword.Id == id).FirstOrDefaultAsync();
 
-        public void Refresh() {
+        public void RefreshAsync() {
             CSharpTestProjectHelper.GetKeywords();
-            string text = System.IO.File.ReadAllText(@"c:\temp\keywords.json");
-            var bsonDoc = BsonDocument.Parse(text);
-            Logger.Debug($"{JsonConvert.SerializeObject(bsonDoc)}");
+            using (var streamReader = new StreamReader("c:\\temp\\keywords.json"))
+            {
+                string line;
+                while ((line = streamReader.ReadLine()) != null)
+                {
+                    using (var jsonReader = new JsonReader(line))
+                    {
+                        var context = BsonDeserializationContext.CreateRoot(jsonReader);
+                        Logger.Debug($"{context}");
+                        Keyword document = _keywords.DocumentSerializer.Deserialize(context);
+                        _keywords.InsertOne(document);
+                    }
+                }
+            }
         }
     }
 }
