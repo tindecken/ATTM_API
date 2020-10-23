@@ -22,8 +22,8 @@ namespace ATTM_API.Controllers
             _keywordService.Get();
 
         [HttpGet("refresh")]
-        public void Refresh() =>
-            _keywordService.RefreshAsync();
+        public Task<ActionResult<Keyword>> Refresh() =>
+            await _keywordService.RefreshAsync();
 
         [HttpGet("{id:length(24)}", Name = "GetKeyword")]
         public async Task<ActionResult<Keyword>> Get(string id)

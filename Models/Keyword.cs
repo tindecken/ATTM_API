@@ -6,7 +6,6 @@ using Newtonsoft.Json;
 
 namespace ATTM_API.Models
 {
-    [BsonIgnoreExtraElements]
     public class Keyword
     {
         [BsonId]
@@ -15,7 +14,5 @@ namespace ATTM_API.Models
         public DateTime refreshDate { get; set; } = DateTime.UtcNow;
         [BsonExtraElements]
         public BsonDocument categories { get; set; }
-
-
     }
 }

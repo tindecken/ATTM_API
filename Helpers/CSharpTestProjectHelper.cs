@@ -31,6 +31,7 @@ namespace ATTM_API.Helpers
         public static string sKeyWordsFolder = Path.Combine(sProjectPath, "TestFW", "TestProjectCsharp", "Keywords");
         public static string sTestProjectFolder = drInfoRoot.Parent.FullName;
         public static string sTestProjectDLL = Path.Combine(sTestProjectFolder, "TestProject", "TestProjectCSharp.dll");
+        public static string sKeywordListFile = Path.Combine(Path.GetTempPath(), "Keyword.json");
 
         public static string sPatternStartSummary = "/// <summary>";
         public static string sPatternEndSummary = "/// </summary>";
@@ -56,7 +57,7 @@ namespace ATTM_API.Helpers
             {
                 //StringBuilder sb = new StringBuilder();
                 //StringWriter sw = new StringWriter(sb);
-                using (StreamWriter file = File.CreateText(@"c:\temp\keywords.json"))
+                using (StreamWriter file = File.CreateText(sKeywordListFile))
                 using (JsonTextWriter writer = new JsonTextWriter(file))
                 {
                     writer.Formatting = Formatting.None;
@@ -235,34 +236,12 @@ namespace ATTM_API.Helpers
                     writer.WriteEndObject();
                 }
 
-                
-
-
-
-                // string tempKW = Path.Combine(Path.GetTempPath(), "keyword.xml");
-                // var xtw = new XmlTextWriter(tempKW, Encoding.UTF8)
-                // {
-                //     Formatting = Formatting.Indented,
-                //     Indentation = 4
-                // };
-                // xtw.WriteStartDocument(true);
-                // xtw.WriteStartElement(TagConstant.Keywords);
-                // xtw.WriteAttributeString(TagConstant.AttributeAdapterType, "CSharp");
-
-                
-                // xtw.WriteEndElement();
-                // xtw.Close();
-                // File.Copy(tempKW, xmlOutputFile, true);
                 Logger.Info($"Get Keyword list and store to file successfully");
             }
+
             catch (Exception ex)
             {
-                var st = new StackTrace(ex, true);
-                // Get the top stack frame
-                var frame = st.GetFrame(0);
-                // Get the line number from the stack frame
-                var line = frame.GetFileLineNumber();
-                Logger.Error($"Error while getting keyword list: Line: {line} {frame} {ex}");
+                throw new ApplicationException($"{ex}");
             }
         }
     }

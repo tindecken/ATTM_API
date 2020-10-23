@@ -16,6 +16,7 @@ namespace ATTM_API.Services
     {
         private readonly IMongoCollection<Keyword> _keywords;
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
+        public static string sKeywordListFile = Path.Combine(Path.GetTempPath(), "Keyword.json");
         public KeywordService(IATTMDatabaseSettings settings)
         {
             var client = new MongoClient(settings.ConnectionString);
@@ -30,9 +31,9 @@ namespace ATTM_API.Services
         public async Task<Keyword> Get(string id) =>
             await _keywords.Find<Keyword>(keyword => keyword.Id == id).FirstOrDefaultAsync();
 
-        public void RefreshAsync() {
+        public async Task<Bson> RefreshAsync() {
             CSharpTestProjectHelper.GetKeywords();
-            using (var streamReader = new StreamReader("c:\\temp\\keywords.json"))
+            using (var streamReader = new StreamReader(sKeywordListFile))
             {
                 string line;
                 while ((line = streamReader.ReadLine()) != null)
@@ -40,12 +41,13 @@ namespace ATTM_API.Services
                     using (var jsonReader = new JsonReader(line))
                     {
                         var context = BsonDeserializationContext.CreateRoot(jsonReader);
-                        Logger.Debug($"{context}");
                         Keyword document = _keywords.DocumentSerializer.Deserialize(context);
-                        _keywords.InsertOne(document);
+                        Logger.Debug($"{document}");
+                        await _keywords.InsertOneAsync(document);
                     }
                 }
             }
+            return await _keywords.Find<Keyword>(x => true).FirstOrDefaultAsync();
         }
     }
 }
