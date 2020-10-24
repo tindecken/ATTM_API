@@ -31,7 +31,7 @@ namespace ATTM_API.Services
         public async Task<Keyword> Get(string id) =>
             await _keywords.Find<Keyword>(keyword => keyword.Id == id).FirstOrDefaultAsync();
 
-        public async Task<Bson> RefreshAsync() {
+        public async Task<string> RefreshAsync() {
             CSharpTestProjectHelper.GetKeywords();
             using (var streamReader = new StreamReader(sKeywordListFile))
             {
@@ -42,12 +42,14 @@ namespace ATTM_API.Services
                     {
                         var context = BsonDeserializationContext.CreateRoot(jsonReader);
                         Keyword document = _keywords.DocumentSerializer.Deserialize(context);
-                        Logger.Debug($"{document}");
+                        Logger.Debug($"{Newtonsoft.Json.JsonConvert.SerializeObject(document)}");
                         await _keywords.InsertOneAsync(document);
                     }
                 }
             }
-            return await _keywords.Find<Keyword>(x => true).FirstOrDefaultAsync();
+            var doc = await _keywords.Find(bson => true).SortByDescending(e => e.refreshDate).FirstOrDefaultAsync();
+            return doc.ToJson(new JsonWriterSettings { OutputMode = JsonOutputMode.Shell });
+
         }
     }
 }
