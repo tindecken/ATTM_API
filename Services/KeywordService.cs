@@ -4,6 +4,7 @@ using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -31,7 +32,7 @@ namespace ATTM_API.Services
         public async Task<Keyword> Get(string id) =>
             await _keywords.Find<Keyword>(keyword => keyword.Id == id).FirstOrDefaultAsync();
 
-        public async Task<string> RefreshAsync() {
+        public async Task<JObject> RefreshAsync() {
             CSharpTestProjectHelper.GetKeywords();
             using (var streamReader = new StreamReader(sKeywordListFile))
             {
@@ -41,15 +42,15 @@ namespace ATTM_API.Services
                     using (var jsonReader = new JsonReader(line))
                     {
                         var context = BsonDeserializationContext.CreateRoot(jsonReader);
+                        Logger.Debug($"context {Newtonsoft.Json.JsonConvert.SerializeObject(context)}");
                         Keyword document = _keywords.DocumentSerializer.Deserialize(context);
-                        Logger.Debug($"{Newtonsoft.Json.JsonConvert.SerializeObject(document)}");
                         await _keywords.InsertOneAsync(document);
+                        Logger.Debug($"{Newtonsoft.Json.JsonConvert.SerializeObject(document)}");
                     }
                 }
             }
-            var doc = await _keywords.Find(bson => true).SortByDescending(e => e.refreshDate).FirstOrDefaultAsync();
-            return doc.ToJson(new JsonWriterSettings { OutputMode = JsonOutputMode.Shell });
-
+            JObject o = JObject.Parse(File.ReadAllText(sKeywordListFile));
+            return o;
         }
     }
 }

@@ -48,6 +48,7 @@ namespace ATTM_API.Helpers
             Logger.Info($"sTestProjectFolder: {sTestProjectFolder}");
             Logger.Info($"sTestProjectDLL: {sTestProjectDLL}");
             Logger.Info($"sKeyWordsFolder: {sKeyWordsFolder}");
+            Logger.Info($"sKeywordListFile: {sKeywordListFile}");
             Regex rgStartSummary = new Regex(sPatternStartSummary, RegexOptions.IgnoreCase);
             Regex rgEndSummary = new Regex(sPatternEndSummary);
             Regex rgParam = new Regex(sPatternParam);
@@ -55,15 +56,13 @@ namespace ATTM_API.Helpers
             Regex rgGroupParam = new Regex(sPatternGroupParam);
             try
             {
-                //StringBuilder sb = new StringBuilder();
-                //StringWriter sw = new StringWriter(sb);
                 using (StreamWriter file = File.CreateText(sKeywordListFile))
                 using (JsonTextWriter writer = new JsonTextWriter(file))
                 {
                     writer.Formatting = Formatting.None;
                     writer.WriteStartObject();
                     writer.WritePropertyName("_id");
-                    writer.WriteRawValue($"ObjectId(\"{ObjectId.GenerateNewId()}\")");
+                    writer.WriteValue($"{ObjectId.GenerateNewId()}");
                     writer.WritePropertyName("refreshDate");
                     writer.WriteValue(DateTime.UtcNow);
                     writer.WritePropertyName("categories");     //Start Categories

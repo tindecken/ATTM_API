@@ -1,6 +1,8 @@
 using ATTM_API.Models;
 using ATTM_API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -22,8 +24,12 @@ namespace ATTM_API.Controllers
             _keywordService.Get();
 
         [HttpGet("refresh")]
-        public async Task<ActionResult<string>> Refresh() =>
-            await _keywordService.RefreshAsync();
+        public async Task<JObject> Refresh() {
+            return await _keywordService.RefreshAsync();
+            
+
+            // return Json(keywordString);
+        }
 
         [HttpGet("{id:length(24)}", Name = "GetKeyword")]
         public async Task<ActionResult<Keyword>> Get(string id)
