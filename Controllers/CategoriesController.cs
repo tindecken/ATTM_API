@@ -1,6 +1,7 @@
 using ATTM_API.Models;
 using ATTM_API.Services;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -33,6 +34,13 @@ namespace ATTM_API.Controllers
             }
 
             return category;
+        }
+
+        [HttpGet("getAll")]
+        [Authorize]
+        public async Task<JObject> getAll()
+        {
+            return await _categoryService.getAllAsync();
         }
 
         [HttpPost]

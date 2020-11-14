@@ -1,6 +1,7 @@
 using ATTM_API.Models;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -64,6 +65,11 @@ namespace ATTM_API.Services
             {
                 throw ex;   
             }
+        }
+
+        public async Task<JObject> GetAllAsync()
+        {
+            
         }
 
         public void Update(string id, Category categoryIn) =>
