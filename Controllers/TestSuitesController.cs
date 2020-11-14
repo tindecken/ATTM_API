@@ -33,5 +33,19 @@ namespace ATTM_API.Controllers
 
             return testsuite;
         }
+
+        [HttpPost("{tsId:length(24)}/testgroups")]
+        public async Task<ActionResult<TestSuite>> CreateTestSuite(string tsId, TestGroup testGroup)
+        {
+            var result = await _testSuiteService.CreateTestGroup(tsId, testGroup);
+            if (result != null)
+            {
+                return CreatedAtRoute("GetTestGroup", new { controller = "testgroups", id = result.Id }, testGroup);
+            }
+            else
+            {
+                return StatusCode(409, $"TestGroup '{testGroup.Name}' already exists.");
+            }
+        }
     }
 }

@@ -18,6 +18,7 @@ namespace ATTM_API.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public ActionResult<List<Category>> Get() =>
             _categoryService.Get();
 

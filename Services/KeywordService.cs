@@ -49,8 +49,8 @@ namespace ATTM_API.Services
                     }
                 }
             }
-            JObject o = JObject.Parse(File.ReadAllText(sKeywordListFile));
-            return o;
+            JObject kw = JObject.Parse(File.ReadAllText(sKeywordListFile));
+            return kw;
         }
     }
 }

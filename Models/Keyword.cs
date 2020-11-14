@@ -12,7 +12,6 @@ namespace ATTM_API.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-        public DateTime refreshDate { get; set; } = DateTime.UtcNow;
         [BsonExtraElements]
         public BsonDocument categories { get; set; }
     }

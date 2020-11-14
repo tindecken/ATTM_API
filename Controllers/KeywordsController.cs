@@ -24,11 +24,9 @@ namespace ATTM_API.Controllers
             _keywordService.Get();
 
         [HttpGet("refresh")]
+        [Authorize]
         public async Task<JObject> Refresh() {
             return await _keywordService.RefreshAsync();
-            
-
-            // return Json(keywordString);
         }
 
         [HttpGet("{id:length(24)}", Name = "GetKeyword")]
