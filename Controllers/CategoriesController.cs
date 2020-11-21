@@ -37,10 +37,9 @@ namespace ATTM_API.Controllers
         }
 
         [HttpGet("getAll")]
-        [Authorize]
         public async Task<JObject> getAll()
         {
-            return await _categoryService.getAllAsync();
+            return await _categoryService.GetAllAsync();
         }
 
         [HttpPost]
