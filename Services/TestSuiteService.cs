@@ -30,7 +30,7 @@ namespace ATTM_API.Services
         public async Task<TestGroup> CreateTestGroup(string tsId, TestGroup tg) {
             try
             {
-                var existingTestGroup = await _testgroups.Find<TestGroup>(t => t.Name == tg.Name).FirstOrDefaultAsync();
+                var existingTestGroup = await _testgroups.Find<TestGroup>(t => t.tgId == tg.tgId).FirstOrDefaultAsync();
                 if (existingTestGroup != null)
                 {
                     return null;

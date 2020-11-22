@@ -56,7 +56,7 @@ namespace ATTM_API.Services
         {
             try
             {
-                var existingTS = await _testsuites.Find<TestSuite>(t => t.Name == ts.Name).FirstOrDefaultAsync();
+                var existingTS = await _testsuites.Find<TestSuite>(t => t.tsId == ts.tsId).FirstOrDefaultAsync();
                 if(existingTS != null){
                     return null;
                 }else {

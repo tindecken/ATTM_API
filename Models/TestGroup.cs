@@ -15,6 +15,7 @@ namespace ATTM_API.Models
         [JsonRequired]
         [JsonProperty("Name")]
         public string Name { get; set; } 
+        public string tgId { get; set; }
         public string Description { get; set; } = string.Empty;
         public List<string> TestCases { get; set; } = new List<string>();
     }

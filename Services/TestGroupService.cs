@@ -31,7 +31,7 @@ namespace ATTM_API.Services
         {
             try
             {
-                var existingTestCase = await _testcases.Find<TestCase>(t => t.Name == tc.Name).FirstOrDefaultAsync();
+                var existingTestCase = await _testcases.Find<TestCase>(t => t.tcId == tc.tcId).FirstOrDefaultAsync();
                 if (existingTestCase != null)
                 {
                     return null;

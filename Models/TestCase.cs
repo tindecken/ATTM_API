@@ -16,6 +16,7 @@ namespace ATTM_API.Models
         [JsonRequired]
         [JsonProperty("Name")]
         public string Name { get; set; } 
+        public string tcId { get; set; }
         public TestType Type { get; set; } = 0;
         public TestStatus lastRunningStatus { get; set; } = 0;
         public bool isPrimary { get; set; } = false;
