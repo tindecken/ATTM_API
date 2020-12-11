@@ -31,7 +31,6 @@ namespace ATTM_API.Models
         public string Description { get; set; } = string.Empty;
         public int TimeOutInMinutes { get; set; } = 60;
         public TestCase DependOn { get; set; }
-        public List<string> TestSteps { get; set; } = new List<string>();
-
+        public List<TestStep> TestSteps { get; set; }
     }
 }

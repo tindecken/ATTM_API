@@ -78,19 +78,20 @@ namespace ATTM_API.Services
             JObject result = new JObject();
             JArray arrResult = new JArray();
             var allCats = await _categories.Find(new BsonDocument()).ToListAsync();
-            // arr = JArray.Parse(JsonConvert.SerializeObject(allCats));
             foreach (var cat in allCats)
             {
                 JObject catObject = new JObject();
                 catObject = (JObject)JToken.FromObject(cat);
-                catObject["Type"] = "Category";
+                catObject["type"] = "Category";
+                catObject["label"] = cat.Name;
                 JArray arrTS = new JArray();
                 foreach (var tsId in cat.TestSuites) {
                     JObject tsObject = new JObject();
                     JArray arrTG = new JArray();
                     var ts = await _testsuites.Find<TestSuite>(ts => ts.Id == tsId).FirstOrDefaultAsync();
                     tsObject = (JObject)JToken.FromObject(ts);
-                    tsObject["Type"] = "TestSuite";
+                    tsObject["type"] = "TestSuite";
+                    tsObject["label"] = $"{ts.tsId}: {ts.Name}";
                     foreach (var tgId in ts.TestGroups)
                     {
                         JObject tgObject = new JObject();
@@ -98,12 +99,14 @@ namespace ATTM_API.Services
                         var tg = await _testgroups.Find<TestGroup>(tg => tg.Id == tgId).FirstOrDefaultAsync();
                         tgObject = (JObject)JToken.FromObject(tg);
                         tgObject["type"] = "TestGroup";
+                        tgObject["label"] = $"{tg.tgId}: {tg.Name}";
                         foreach (var tcId in tg.TestCases)
                         {
                             JObject tcOjbect = new JObject();
                             var tc = await _testcases.Find<TestCase>(tc => tc.Id == tcId).FirstOrDefaultAsync();
                             tcOjbect = (JObject)JToken.FromObject(tc);
-                            tcOjbect["Type"] = "TestCase";
+                            tcOjbect["type"] = "TestCase";
+                            tcOjbect["label"] = $"{tc.tcId}: {tc.Name}";
                             arrTC.Add(tcOjbect);
                         }
                         tgObject["children"] = arrTC;

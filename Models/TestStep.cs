@@ -1,21 +1,17 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 
 namespace ATTM_API.Models
 {
-    [BsonIgnoreExtraElements]
     public class TestStep
     {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
-        [BsonElement("name")]
-        [JsonRequired]
-        [JsonProperty("Name")]
+        public string TestClient { get; set; }
+        public string Keyword { get; set; }
         public string Name { get; set; } 
         public string Description { get; set; } = string.Empty;
-        public int MyProperty { get; set; }
+        public List<TestParam> Params { get; set; } = new List<TestParam>();
 
     }
 }
