@@ -3,6 +3,7 @@ using ATTM_API.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace ATTM_API.Controllers
 {
@@ -32,6 +33,12 @@ namespace ATTM_API.Controllers
             }
 
             return testCase;
+        }
+
+        [HttpPost("savetestcase")]
+        public async Task<ActionResult<JObject>> SaveTestCase(TestCase tc)
+        {
+            return await _testCaseService.SaveTestCaseAsync(tc);
         }
     }
 }

@@ -7,6 +7,7 @@ namespace ATTM_API.Models
 {
     public class TestStep
     {
+        public string UUID { get; set; }
         public string TestClient { get; set; }
         public string Keyword { get; set; }
         public string Name { get; set; } 

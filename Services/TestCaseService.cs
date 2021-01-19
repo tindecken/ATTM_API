@@ -5,12 +5,14 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace ATTM_API.Services
 {
     public class TestCaseService
     {
         private readonly IMongoCollection<TestCase> _testcases;
+        private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
 
         public TestCaseService(IATTMDatabaseSettings settings)
         {
@@ -24,5 +26,22 @@ namespace ATTM_API.Services
             
         public async Task<TestCase> Get(string id) =>
             await _testcases.Find<TestCase>(tc => tc.Id == id).FirstOrDefaultAsync();
+        public async Task<JObject> SaveTestCaseAsync(TestCase tc)
+        {
+            JObject result = null;
+            try
+            {
+                Logger.Debug($"TestCase: {tc}");
+                var filter = Builders<TestCase>.Filter.Eq("_id", ObjectId.Parse(tc.Id));
+                var entity = _testcases.Find(filter).FirstOrDefault();
+                var replacedTest = await _testcases.ReplaceOneAsync(filter, tc);
+            }
+            catch (Exception ex)
+            {
+                // log or manage the exception
+                throw ex;
+            }
+            return result;
+        }
     }
 }
