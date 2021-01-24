@@ -25,8 +25,6 @@ namespace ATTM_API
 
             log4net.Config.XmlConfigurator.Configure(repo, log4netConfig["log4net"]);
 
-            log.Info("-----------------------------");
-            log.Info("Application - Main is invoked");
             CreateHostBuilder(args).Build().Run();
         }
 

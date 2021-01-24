@@ -14,6 +14,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ATTM_API.Services;
 using ATTM_API.Helpers;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 
 namespace ATTM_API
 {
@@ -66,6 +68,16 @@ namespace ATTM_API
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ATTM_FE API"));
             }
             loggerFactory.AddLog4Net();
+            app.UseExceptionHandler(a => a.Run(async context =>
+            {
+                var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+                var exception = exceptionHandlerPathFeature.Error;
+
+                await context.Response.WriteAsJsonAsync(new
+                {
+                    error = exception.Message,
+                });
+            }));
             app.UseRouting();
 
             // global cors policy

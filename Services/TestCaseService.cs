@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 
 namespace ATTM_API.Services
@@ -28,19 +29,13 @@ namespace ATTM_API.Services
             await _testcases.Find<TestCase>(tc => tc.Id == id).FirstOrDefaultAsync();
         public async Task<JObject> SaveTestCaseAsync(TestCase tc)
         {
-            JObject result = null;
-            try
-            {
-                Logger.Debug($"TestCase: {tc}");
-                var filter = Builders<TestCase>.Filter.Eq("_id", ObjectId.Parse(tc.Id));
-                var entity = _testcases.Find(filter).FirstOrDefault();
-                var replacedTest = await _testcases.ReplaceOneAsync(filter, tc);
-            }
-            catch (Exception ex)
-            {
-                // log or manage the exception
-                throw ex;
-            }
+            JObject result = new JObject();
+            Logger.Debug($"TestCase: {tc}");
+            var filter = Builders<TestCase>.Filter.Eq("_id", ObjectId.Parse(tc.Id));
+            var test = _testcases.Find(filter).FirstOrDefault();
+            if (test == null) throw new Exception($"Can't find test with id {tc.Id}");
+            await _testcases.ReplaceOneAsync(filter, tc);
+            result.Add("message", "Saved test !");
             return result;
         }
     }
