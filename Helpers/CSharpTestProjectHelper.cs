@@ -25,7 +25,7 @@ namespace ATTM_API.Helpers
         private static string sRootDLL = System.Reflection.Assembly.GetExecutingAssembly().Location;
         public static string sRootPath = Path.GetDirectoryName(sRootDLL);
         private static DirectoryInfo drInfoRoot = new DirectoryInfo(sRootPath);
-        public static string sProjectPath = drInfoRoot.Parent.Parent.Parent.Parent.Parent.FullName;
+        public static string sProjectPath = drInfoRoot.Parent.Parent.Parent.Parent.FullName;
         public static string sTestCasesFolder = Path.Combine(sProjectPath, "TestFW", "TestProjectCsharp", "TestCases");
         public static string sTestProjectCsharpcsproj = Path.Combine(sProjectPath, "TestFW", "TestProjectCsharp", "TestProjectCsharp.csproj");
         public static string sKeyWordsFolder = Path.Combine(sProjectPath, "TestFW", "TestProjectCsharp", "Keywords");
