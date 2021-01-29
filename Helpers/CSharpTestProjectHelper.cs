@@ -1,12 +1,17 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
+using ATTM_API.Models;
 using MongoDB.Bson;
 using Newtonsoft.Json;
+using NUnit.Framework;
 using static System.Net.Mime.MediaTypeNames;
+using Formatting = Newtonsoft.Json.Formatting;
 
 namespace ATTM_API.Helpers
 {
@@ -25,7 +30,7 @@ namespace ATTM_API.Helpers
         private static string sRootDLL = System.Reflection.Assembly.GetExecutingAssembly().Location;
         public static string sRootPath = Path.GetDirectoryName(sRootDLL);
         private static DirectoryInfo drInfoRoot = new DirectoryInfo(sRootPath);
-        public static string sProjectPath = drInfoRoot.Parent.Parent.Parent.Parent.FullName;
+        public static string sProjectPath = drInfoRoot.Parent.Parent.Parent.Parent.Parent.FullName;
         public static string sTestCasesFolder = Path.Combine(sProjectPath, "TestFW", "TestProjectCsharp", "TestCases");
         public static string sTestProjectCsharpcsproj = Path.Combine(sProjectPath, "TestFW", "TestProjectCsharp", "TestProjectCsharp.csproj");
         public static string sKeyWordsFolder = Path.Combine(sProjectPath, "TestFW", "TestProjectCsharp", "Keywords");
@@ -242,6 +247,54 @@ namespace ATTM_API.Helpers
             {
                 throw new ApplicationException($"{ex}");
             }
+        }
+
+        public static void GenerateCode(List<TestCase> lstTestCases, string runType, bool isDebug = false)
+        {
+            // Delete item in file TestProjectCsharp.csproj
+            XmlDocument doc = new XmlDocument();
+            doc.Load(sTestProjectCsharpcsproj);
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("ns", "http://schemas.microsoft.com/developer/msbuild/2003");
+            string sXpath = $@"ns:Project/ns:ItemGroup/ns:Compile[@Include]";
+            XmlNodeList nodes = doc.SelectNodes(sXpath, nsmgr);
+            foreach (XmlNode node in nodes)
+            {
+                if (node.Attributes["Include"].Value.StartsWith("TestCases") && !node.Attributes["Include"].Value.Contains(@"TestCases\EXCLUDE"))
+                {
+                    node.ParentNode.RemoveChild(node);
+                }
+            }
+            doc.Save(sTestProjectCsharpcsproj);
+
+            // Delete all TestCases Folder (but subfolder EXCLUDE) in TestProjectCsharp
+            if (Directory.Exists(sTestCasesFolder))
+            {
+                DirectoryInfo diTestCases = new DirectoryInfo(sTestCasesFolder);
+                foreach (FileInfo fiItem in diTestCases.GetFiles())
+                {
+                    fiItem.Delete();
+                }
+                foreach (DirectoryInfo diItem in diTestCases.GetDirectories())
+                {
+                    if (!diItem.Name.ToUpper().Equals("EXCLUDE"))
+                    {
+                        diItem.Delete(true);
+                    }
+                }
+            }
+            else
+            {
+                Logger.Error($"There's no TestCases Folder in TestProjectCsharp, please check");
+            }
+
+            // Begin Generate Code
+            foreach (var tc in lstTestCases)
+            {
+                Logger.Debug($"TestCase: {JsonConvert.SerializeObject(tc)}");
+            }
+            // End Generate Code
+
         }
     }
 }

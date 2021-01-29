@@ -30,7 +30,7 @@ namespace ATTM_API.Services
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model)
         {
-            Logger.Info($"User: {Newtonsoft.Json.JsonConvert.SerializeObject(model)}");
+            Logger.Info($"User: {JsonConvert.SerializeObject(model)}");
             var user = _users.Find<User>(user => user.Username == model.Username && user.Password == model.Password).FirstOrDefault();
 
             // return null if user not found

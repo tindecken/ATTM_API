@@ -32,5 +32,8 @@ namespace ATTM_API.Models
         public int TimeOutInMinutes { get; set; } = 60;
         public TestCase DependOn { get; set; }
         public List<TestStep> TestSteps { get; set; }
+        public string TestSuite { get; set; }
+        public string TestGroup { get; set; }
+        public string Category { get; set; }
     }
 }

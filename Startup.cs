@@ -46,6 +46,7 @@ namespace ATTM_API
             services.AddSingleton<TestEnvironmentService>();
             services.AddSingleton<UserService>();
             services.AddSingleton<KeywordService>();
+            services.AddSingleton<TestProjectService>();
             services.AddSingleton<TestProjectExplorerService>();
             services.AddControllers()
                 .AddNewtonsoftJson(options => options.UseMemberCasing());
