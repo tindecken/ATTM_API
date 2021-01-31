@@ -33,8 +33,7 @@ namespace ATTM_API
         {
             services.AddCors();
             // requires using Microsoft.Extensions.Options
-            services.Configure<ATTMDatabaseSettings>(
-                Configuration.GetSection(nameof(ATTMDatabaseSettings)));
+            services.Configure<ATTMDatabaseSettings>(Configuration.GetSection(nameof(ATTMDatabaseSettings)));
             services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
             services.AddSingleton<IATTMDatabaseSettings>(sp =>
                 sp.GetRequiredService<IOptions<ATTMDatabaseSettings>>().Value);

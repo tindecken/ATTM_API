@@ -3,10 +3,12 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using ATTM_API.Models;
+using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using Newtonsoft.Json;
 using NUnit.Framework;
@@ -18,15 +20,12 @@ namespace ATTM_API.Helpers
     public class CSharpTestProjectHelper
     {
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
-        public static string[] supportedBrowers = new[]
+        private readonly AppSettings _appSettings;
+        public CSharpTestProjectHelper(IOptions<AppSettings> appSettings)
         {
-            "Chrome1",
-            "Chrome2",
-            "Chrome3",
-            "FireFox1",
-            "FireFox2",
-            "FireFox3"
-        };
+            _appSettings = appSettings.Value;
+        }
+
         private static string sRootDLL = System.Reflection.Assembly.GetExecutingAssembly().Location;
         public static string sRootPath = Path.GetDirectoryName(sRootDLL);
         private static DirectoryInfo drInfoRoot = new DirectoryInfo(sRootPath);
@@ -38,6 +37,7 @@ namespace ATTM_API.Helpers
         public static string sTestProjectDLL = Path.Combine(sTestProjectFolder, "TestProject", "TestProjectCSharp.dll");
         public static string sKeywordListFile = Path.Combine(Path.GetTempPath(), "Keyword.json");
 
+        
         public static string sPatternStartSummary = "/// <summary>";
         public static string sPatternEndSummary = "/// </summary>";
         public static string sPatternParam = @"/// <param.*</param>$";
@@ -50,10 +50,6 @@ namespace ATTM_API.Helpers
         /// </summary>
         public static void GetKeywords()
         {
-            Logger.Info($"sTestProjectFolder: {sTestProjectFolder}");
-            Logger.Info($"sTestProjectDLL: {sTestProjectDLL}");
-            Logger.Info($"sKeyWordsFolder: {sKeyWordsFolder}");
-            Logger.Info($"sKeywordListFile: {sKeywordListFile}");
             Regex rgStartSummary = new Regex(sPatternStartSummary, RegexOptions.IgnoreCase);
             Regex rgEndSummary = new Regex(sPatternEndSummary);
             Regex rgParam = new Regex(sPatternParam);
@@ -249,9 +245,9 @@ namespace ATTM_API.Helpers
             }
         }
 
-        public static void GenerateCode(List<TestCase> lstTestCases, string runType, bool isDebug = false)
+        public void GenerateCode(List<TestCase> lstTestCases, string runType, bool isDebug = false)
         {
-            // Delete item in file TestProjectCsharp.csproj
+            #region Delete item in file TestProjectCsharp.csproj
             XmlDocument doc = new XmlDocument();
             doc.Load(sTestProjectCsharpcsproj);
             XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
@@ -267,7 +263,10 @@ namespace ATTM_API.Helpers
             }
             doc.Save(sTestProjectCsharpcsproj);
 
-            // Delete all TestCases Folder (but subfolder EXCLUDE) in TestProjectCsharp
+            #endregion
+
+            #region Delete all TestCases Folder (but subfolder EXCLUDE) in TestProjectCsharp
+
             if (Directory.Exists(sTestCasesFolder))
             {
                 DirectoryInfo diTestCases = new DirectoryInfo(sTestCasesFolder);
@@ -288,12 +287,299 @@ namespace ATTM_API.Helpers
                 Logger.Error($"There's no TestCases Folder in TestProjectCsharp, please check");
             }
 
-            // Begin Generate Code
-            foreach (var tc in lstTestCases)
+            #endregion
+
+            #region Generate Code
+
+            var lstSupportBrowser = _appSettings.SupportBrowser.Split(",");
+
+            foreach (var testcase in lstTestCases)
             {
-                Logger.Debug($"TestCase: {JsonConvert.SerializeObject(tc)}");
+                Logger.Debug($"TestCase: {JsonConvert.SerializeObject(testcase)}");
+                // Create Category folder if not exist
+                if (!Directory.Exists(Path.Combine(sTestCasesFolder, testcase.Category)))
+                {
+                    Directory.CreateDirectory(Path.Combine(sTestCasesFolder, testcase.Category));
+                }
+
+                // Create TestSuite file into Category folder
+                // If TestSuite file is not exist --> create it + add some packages, setup, teardown, testcase part....
+                // If TestSuite is exist --> only insert testcase part
+
+
+                //if (!File.Exists(Path.Combine(sTestCasesFolder, tc.Category, tc.TestSuite + ".cs")))
+                //{
+                //    File.Create(Path.Combine(sTestCasesFolder, tc.Category, tc.TestSuite + ".cs"));
+
+                //}
+
+                string tsCodeFile = Path.Combine(_appSettings.TestProjectCsharp, "TestCases", testcase.Category, testcase.TestSuite + ".cs");
+
+                //File.Create(tsCodeFile);
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.AppendLine(@"using NUnit.Framework;");
+                stringBuilder.AppendLine(@"using NUnit.Framework.Internal;");
+                stringBuilder.AppendLine(@"using System;");
+                stringBuilder.AppendLine(@"using TestProjectCSharp.Framework;");
+                stringBuilder.AppendLine(@"using TestProjectCSharp.Framework.CustomAttributes;");
+                stringBuilder.AppendLine(@"using SQLServices;");
+                stringBuilder.AppendLine(@"using TestProjectCSharp.Keywords;");
+                stringBuilder.AppendLine(@"using TestProjectCSharp.Framework.WrapperFactory;");
+                stringBuilder.AppendLine(@"using TestProjectCSharp.Keywords.Saucedemo;");
+                stringBuilder.AppendLine("");
+                stringBuilder.AppendLine($@"namespace TestProjectCSharp.TestCases");
+                stringBuilder.AppendLine(@"{");
+                stringBuilder.AppendLine("\t[TestFixture]");
+                stringBuilder.AppendLine($"\tclass {testcase.TestSuite} : SetupAndTearDown");
+                stringBuilder.AppendLine("\t{");
+                stringBuilder.AppendLine("\t\tstatic int RunId;");
+                stringBuilder.AppendLine("");
+                stringBuilder.AppendLine("\t\t[OneTimeSetUp]");
+                stringBuilder.AppendLine("\t\tpublic void ClassSetup()");
+                stringBuilder.AppendLine("\t\t{");
+                switch (runType.ToUpper())
+                {
+                    case string debug when debug.Contains("DEVELOP"):
+                        stringBuilder.AppendLine("\t\t\tRunId = SQLUtils.LastRunId_Plus_1(\"develop\");");
+                        break;
+                    case string regression when regression.Contains("REGRESSION"):
+                        stringBuilder.AppendLine("\t\t\tRunId = SQLUtils.LastRunId_Plus_1(\"regression\");");
+                        break;
+                    default:
+                        break;
+                }
+                stringBuilder.AppendLine("\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Add(\"RunId\", RunId);");
+                stringBuilder.AppendLine("\t\t}");
+                stringBuilder.AppendLine("");
+                stringBuilder.AppendLine("\t\t[OneTimeTearDown]");
+                stringBuilder.AppendLine("\t\tpublic void ClassTearDown()");
+                stringBuilder.AppendLine("\t\t{");
+                stringBuilder.AppendLine("\t\t}");
+                stringBuilder.AppendLine("");
+                //TestCase Block
+                int iOrder = 1;
+                foreach (TestCase tc in lstTestCases)
+                {
+                    if (tc.TimeOutInMinutes == 0)
+                    {
+                        stringBuilder.AppendLine($"\t\t[Test, Timeout({int.Parse(_appSettings.MaximumTestCaseTimeOutInMinus) * 60000}), Order({iOrder})]");
+                    }
+                    else
+                    {
+                        stringBuilder.AppendLine($"\t\t[Test, Timeout({tc.TimeOutInMinutes * 60000}), Order({iOrder})]");
+                    }
+                    stringBuilder.AppendLine($"\t\t[TestCaseId(\"{tc.tcId}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestCaseName(\"{tc.Name}\")]");
+                    stringBuilder.AppendLine($"\t\t[Description(\"{tc.Description}\")]");
+                    stringBuilder.AppendLine($"\t\t[Category(\"{tc.Category}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestSuite(\"{tc.TestSuite}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestGroup(\"{tc.TestGroup}\")]");
+                    if (isDebug) stringBuilder.AppendLine($"\t\t[IsDebug(\"true\")]");
+                    else stringBuilder.AppendLine($"\t\t[IsDebug(\"false\")]");
+                    stringBuilder.AppendLine($"\t\t[RunType(\"{runType}\")]");
+                    stringBuilder.AppendLine($"\t\t[Author(\"{tc.Designer.Username}\")]");
+                    stringBuilder.AppendLine($"\t\t[Team(\"{tc.Team}\")]");
+                    stringBuilder.AppendLine($"\t\t[RunOwner(\"{Environment.MachineName}\")]");
+                    stringBuilder.AppendLine($"\t\t[Type(\"{tc.Type}\")]");
+                    List<string> lstDistinctAUTs = new List<string>();
+                    foreach (TestStep ts in tc.TestSteps)
+                    {
+                        if (ts.isDisabled || ts.isComment || ts.Name.ToUpper().Equals("CLEANUP")) continue;
+                        bool containsItem = lstDistinctAUTs.Any(item => item.ToUpper().Equals(ts.TestAUT.ToUpper()));
+                        if (!containsItem) lstDistinctAUTs.Add(ts.TestAUT);
+                    }
+                    //Base on testAUTName ==> get testAUTType == BROWSER, expected to know how many WebDriver used in testcase.
+                    foreach (string aut in lstDistinctAUTs)
+                    {
+                        if (lstSupportBrowser.Contains(aut))
+                        {
+                            stringBuilder.AppendLine($"\t\t[WebDriver(\"{aut}\")]");
+                        }
+                    }
+                    stringBuilder.AppendLine($"\t\t[WorkItem(\"{tc.WorkItem}\")]");
+                    stringBuilder.AppendLine($"\t\tpublic void {tc.tcId}()");
+                    stringBuilder.AppendLine("\t\t{");
+
+
+                    foreach (string aut in lstDistinctAUTs)
+                    {
+                        if (lstSupportBrowser.Contains(aut))
+                        {
+                            stringBuilder.AppendLine($"\t\t\tWebDriverFactory.InitBrowser(\"{aut}\");");
+                        }
+                    }
+
+                    //TestSteps block
+                    List<TestStep> lstDistinctTestSteps = new List<TestStep>();
+                    foreach (TestStep ts in tc.TestSteps)
+                    {
+                        if (ts.isDisabled || ts.isComment || ts.Name.ToUpper().Equals("CLEANUP")) continue;
+                        bool containsItem = lstDistinctTestSteps.Any(item => item.Name == ts.Name && item.TestAUT == ts.TestAUT);
+                        if (!containsItem) lstDistinctTestSteps.Add(ts);
+                    }
+
+                    foreach (TestStep ts in lstDistinctTestSteps)
+                    {
+                        if (lstSupportBrowser.Contains(ts.TestAUT))
+                        {
+                            stringBuilder.Append($"\t\t\t{ts.Feature} {ts.TestAUT}_{ts.Feature} = new {ts.Feature}(WebDriverFactory.Driver");
+                            stringBuilder.Append($"{ts.TestAUT.Substring(ts.TestAUT.Length - 1)}");
+                            stringBuilder.AppendLine(");");
+                        }
+                        else
+                        {
+                            stringBuilder.AppendLine($"\t\t\t{ts.Feature} {ts.TestAUT}_{ts.Feature} = new {ts.Feature}();");
+                        }
+                    }
+
+                    StringBuilder sBuilderCleanUpKeywords = new StringBuilder();
+                    StringBuilder sBuilderKeywords = new StringBuilder();
+
+                    //index of CleanUp Keyword
+                    int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Name.ToUpper().Equals("CLEANUP"));
+                    Logger.Info(indexCleanUp == -1
+                        ? $"Test case [{tc.Name}] has no CleanUp step"
+                        : $"Test case [{tc.Name}] - CleanUp at index: {indexCleanUp}");
+                    //I do hard code indexCleanUp in case of user doesn't use CleanUp in the test case
+                    if (indexCleanUp == -1) indexCleanUp = int.MaxValue;
+                    for (int i = 0; i < tc.TestSteps.Count; i++)
+                    {
+                        if (tc.TestSteps[i].Name.ToUpper().Equals("CLEANUP")) continue;
+                        // BEFORE CLEANUP
+                        if (i < indexCleanUp)
+                        {
+                            if (tc.TestSteps[i].isComment)
+                            {
+                                sBuilderKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
+                            }
+                            else
+                            {
+                                if (tc.TestSteps[i].isDisabled)
+                                {
+                                    sBuilderKeywords.Append("\t\t\t// ");
+                                }
+                                else
+                                {
+                                    sBuilderKeywords.Append("\t\t\t");
+                                }
+
+                                sBuilderKeywords.Append($"{tc.TestSteps[i].TestAUT}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Name}(");
+                                foreach (TestParam param in tc.TestSteps[i].Params)
+                                {
+                                    if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                    {
+                                        if (string.IsNullOrEmpty(param.Value))
+                                        {
+                                            sBuilderKeywords.Append($"null");
+                                        }
+                                        else
+                                        {
+                                            sBuilderKeywords.Append($"\"{param.Value}\"");
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (string.IsNullOrEmpty(param.Value))
+                                        {
+                                            sBuilderKeywords.Append($"null, ");
+                                        }
+                                        else
+                                        {
+                                            sBuilderKeywords.Append($"\"{param.Value}\", ");
+                                        }
+
+                                    }
+                                }
+                                sBuilderKeywords.AppendLine(");");
+                            }
+                        }
+                        //AFTER CLEANUP
+                        else
+                        {
+                            if (tc.TestSteps[i].isComment)
+                            {
+                                sBuilderCleanUpKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
+                            }
+                            else
+                            {
+                                if (tc.TestSteps[i].isDisabled)
+                                {
+                                    sBuilderCleanUpKeywords.Append("\t\t\t// ");
+                                }
+                                else
+                                {
+                                    sBuilderCleanUpKeywords.Append("\t\t\t");
+                                }
+
+                                sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {tc.TestSteps[i].TestAUT}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Name}(");
+                                foreach (TestParam param in tc.TestSteps[i].Params)
+                                {
+                                    if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                    {
+                                        if (string.IsNullOrEmpty(param.Value))
+                                        {
+                                            sBuilderCleanUpKeywords.Append($"null");
+                                        }
+                                        else
+                                        {
+                                            sBuilderCleanUpKeywords.Append($"\"{param.Value}\"");
+                                        }
+
+                                    }
+                                    else
+                                    {
+                                        if (string.IsNullOrEmpty(param.Value))
+                                        {
+                                            sBuilderCleanUpKeywords.Append($"null, ");
+                                        }
+                                        else
+                                        {
+                                            sBuilderCleanUpKeywords.Append($"\"{param.Value}\", ");
+                                        }
+
+                                    }
+                                }
+                                sBuilderCleanUpKeywords.AppendLine("));");
+                            }
+                        }
+                    }
+
+                    stringBuilder.Append(sBuilderCleanUpKeywords);
+                    stringBuilder.Append(sBuilderKeywords);
+
+                    stringBuilder.AppendLine("\t\t}");
+                    stringBuilder.AppendLine("");
+
+                    iOrder++;
+                }
+                stringBuilder.AppendLine("\t}");
+                stringBuilder.AppendLine("}");
+
+
+                using (StreamWriter file = new StreamWriter(tsCodeFile))
+                {
+                    file.WriteLine(stringBuilder.ToString());
+                }
+
+                // Add Compile node in TestProjectCsharp.csproj
+                doc.Load(Path.Combine(_appSettings.TestProjectCsharp, "TestProjectCSharp.csproj"));
+                nsmgr.AddNamespace("ns", "http://schemas.microsoft.com/developer/msbuild/2003");
+                XmlElement CompileElement = doc.CreateElement("Compile", "http://schemas.microsoft.com/developer/msbuild/2003");
+
+                // Get string from TestCases file. Exp: from: C:\dev\TestFW\TestProjectCsharp\TestCases\Appium2\Appium_Test2 - Copy.cs to: TestCases\Appium2\Appium_Test2 - Copy.cs
+                string sIncludeValue = string.Empty;
+                string separator = "TestCases";
+                int separatorIndex = tsCodeFile.IndexOf(separator, StringComparison.Ordinal);
+                if (separatorIndex >= 0)
+                {
+                    sIncludeValue = $"TestCases{tsCodeFile.Substring(separatorIndex + separator.Length)}";
+                }
+                CompileElement.SetAttribute("Include", sIncludeValue);
+                XmlNode xmlCompileNode = doc.SelectSingleNode(sXpath, nsmgr);
+                xmlCompileNode.ParentNode.AppendChild(CompileElement);
+                doc.Save(Path.Combine(_appSettings.TestProjectCsharp, "TestProjectCSharp.csproj"));
             }
-            // End Generate Code
+            #endregion
 
         }
     }

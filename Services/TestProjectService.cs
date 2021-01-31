@@ -16,13 +16,12 @@ namespace ATTM_API.Services
     {
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
 
-        public TestProjectService()
-        {
-        }
 
         public async Task<JObject> generateCodeAsync(List<TestCase> testCases, string runType, bool isDebug = false)
         {
-            CSharpTestProjectHelper.GenerateCode(testCases, runType);
+            CSharpTestProjectHelper csTestProjectHelper = new CSharpTestProjectHelper()
+
+            csTestProjectHelper.GenerateCode(testCases, runType);
             JObject result = new JObject();
             // Delete Compile node in TestProjectCharp.csproj
             
