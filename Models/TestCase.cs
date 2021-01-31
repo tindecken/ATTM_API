@@ -23,7 +23,7 @@ namespace ATTM_API.Models
         public bool isDisabled { get; set; } = false;
         public bool isDeleted { get; set; } = false;
         public string WorkItem { get; set; } = string.Empty;
-        public User Designer { get; set; }
+        public string Designer { get; set; }
         public string Team { get; set; }
         public DateTime createdDate { get; set; } = DateTime.UtcNow;
         public DateTime lastModifiedDate { get; set; } = DateTime.UtcNow;

@@ -348,8 +348,6 @@ namespace ATTM_API.Helpers
                     case string regression when regression.Contains("REGRESSION"):
                         stringBuilder.AppendLine("\t\t\tRunId = SQLUtils.LastRunId_Plus_1(\"regression\");");
                         break;
-                    default:
-                        break;
                 }
                 stringBuilder.AppendLine("\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Add(\"RunId\", RunId);");
                 stringBuilder.AppendLine("\t\t}");
@@ -380,14 +378,14 @@ namespace ATTM_API.Helpers
                     if (isDebug) stringBuilder.AppendLine($"\t\t[IsDebug(\"true\")]");
                     else stringBuilder.AppendLine($"\t\t[IsDebug(\"false\")]");
                     stringBuilder.AppendLine($"\t\t[RunType(\"{runType}\")]");
-                    stringBuilder.AppendLine($"\t\t[Author(\"{tc.Designer.Username}\")]");
+                    stringBuilder.AppendLine($"\t\t[Author(\"{tc.Designer}\")]");
                     stringBuilder.AppendLine($"\t\t[Team(\"{tc.Team}\")]");
                     stringBuilder.AppendLine($"\t\t[RunOwner(\"{Environment.MachineName}\")]");
                     stringBuilder.AppendLine($"\t\t[Type(\"{tc.Type}\")]");
                     List<string> lstDistinctAUTs = new List<string>();
                     foreach (TestStep ts in tc.TestSteps)
                     {
-                        if (ts.isDisabled || ts.isComment || ts.Name.ToUpper().Equals("CLEANUP")) continue;
+                        if (ts.isDisabled || ts.isComment || ts.Keyword.ToUpper().Equals("CLEANUP")) continue;
                         bool containsItem = lstDistinctAUTs.Any(item => item.ToUpper().Equals(ts.TestAUT.ToUpper()));
                         if (!containsItem) lstDistinctAUTs.Add(ts.TestAUT);
                     }
@@ -416,8 +414,8 @@ namespace ATTM_API.Helpers
                     List<TestStep> lstDistinctTestSteps = new List<TestStep>();
                     foreach (TestStep ts in tc.TestSteps)
                     {
-                        if (ts.isDisabled || ts.isComment || ts.Name.ToUpper().Equals("CLEANUP")) continue;
-                        bool containsItem = lstDistinctTestSteps.Any(item => item.Name == ts.Name && item.TestAUT == ts.TestAUT);
+                        if (ts.isDisabled || ts.isComment || ts.Keyword.ToUpper().Equals("CLEANUP")) continue;
+                        bool containsItem = lstDistinctTestSteps.Any(item => item.Keyword == ts.Keyword && item.TestAUT == ts.TestAUT);
                         if (!containsItem) lstDistinctTestSteps.Add(ts);
                     }
 
@@ -439,7 +437,7 @@ namespace ATTM_API.Helpers
                     StringBuilder sBuilderKeywords = new StringBuilder();
 
                     //index of CleanUp Keyword
-                    int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Name.ToUpper().Equals("CLEANUP"));
+                    int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Keyword.ToUpper().Equals("CLEANUP"));
                     Logger.Info(indexCleanUp == -1
                         ? $"Test case [{tc.Name}] has no CleanUp step"
                         : $"Test case [{tc.Name}] - CleanUp at index: {indexCleanUp}");
@@ -447,7 +445,7 @@ namespace ATTM_API.Helpers
                     if (indexCleanUp == -1) indexCleanUp = int.MaxValue;
                     for (int i = 0; i < tc.TestSteps.Count; i++)
                     {
-                        if (tc.TestSteps[i].Name.ToUpper().Equals("CLEANUP")) continue;
+                        if (tc.TestSteps[i].Keyword.ToUpper().Equals("CLEANUP")) continue;
                         // BEFORE CLEANUP
                         if (i < indexCleanUp)
                         {
@@ -466,7 +464,7 @@ namespace ATTM_API.Helpers
                                     sBuilderKeywords.Append("\t\t\t");
                                 }
 
-                                sBuilderKeywords.Append($"{tc.TestSteps[i].TestAUT}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Name}(");
+                                sBuilderKeywords.Append($"{tc.TestSteps[i].TestAUT}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Keyword}(");
                                 foreach (TestParam param in tc.TestSteps[i].Params)
                                 {
                                     if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
@@ -514,7 +512,7 @@ namespace ATTM_API.Helpers
                                     sBuilderCleanUpKeywords.Append("\t\t\t");
                                 }
 
-                                sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {tc.TestSteps[i].TestAUT}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Name}(");
+                                sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {tc.TestSteps[i].TestAUT}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Keyword}(");
                                 foreach (TestParam param in tc.TestSteps[i].Params)
                                 {
                                     if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
