@@ -14,17 +14,14 @@ using Newtonsoft.Json;
 using NUnit.Framework;
 using static System.Net.Mime.MediaTypeNames;
 using Formatting = Newtonsoft.Json.Formatting;
+using Microsoft.Extensions.Configuration;
+
 
 namespace ATTM_API.Helpers
 {
     public class CSharpTestProjectHelper
     {
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
-        private readonly AppSettings _appSettings;
-        public CSharpTestProjectHelper(IOptions<AppSettings> appSettings)
-        {
-            _appSettings = appSettings.Value;
-        }
 
         private static string sRootDLL = System.Reflection.Assembly.GetExecutingAssembly().Location;
         public static string sRootPath = Path.GetDirectoryName(sRootDLL);
@@ -245,8 +242,14 @@ namespace ATTM_API.Helpers
             }
         }
 
-        public void GenerateCode(List<TestCase> lstTestCases, string runType, bool isDebug = false)
+        public static void GenerateCode(List<TestCase> lstTestCases, string runType, bool isDebug = false)
         {
+            var TestFW = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["TestFW"];
+            var TestProjectCsharp = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["TestProjectCsharp"];
+            var DefaultTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["DefaultTestCaseTimeOutInMinus"];
+            var MaximumTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["MaximumTestCaseTimeOutInMinus"];
+            var SupportBrowser = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["SupportBrowser"];
+
             #region Delete item in file TestProjectCsharp.csproj
             XmlDocument doc = new XmlDocument();
             doc.Load(sTestProjectCsharpcsproj);
@@ -291,7 +294,7 @@ namespace ATTM_API.Helpers
 
             #region Generate Code
 
-            var lstSupportBrowser = _appSettings.SupportBrowser.Split(",");
+            var lstSupportBrowser = SupportBrowser.Split(",");
 
             foreach (var testcase in lstTestCases)
             {
@@ -313,7 +316,7 @@ namespace ATTM_API.Helpers
 
                 //}
 
-                string tsCodeFile = Path.Combine(_appSettings.TestProjectCsharp, "TestCases", testcase.Category, testcase.TestSuite + ".cs");
+                string tsCodeFile = Path.Combine(TestProjectCsharp, "TestCases", testcase.Category, testcase.TestSuite + ".cs");
 
                 //File.Create(tsCodeFile);
                 StringBuilder stringBuilder = new StringBuilder();
@@ -362,7 +365,7 @@ namespace ATTM_API.Helpers
                 {
                     if (tc.TimeOutInMinutes == 0)
                     {
-                        stringBuilder.AppendLine($"\t\t[Test, Timeout({int.Parse(_appSettings.MaximumTestCaseTimeOutInMinus) * 60000}), Order({iOrder})]");
+                        stringBuilder.AppendLine($"\t\t[Test, Timeout({int.Parse(MaximumTestCaseTimeOutInMinus) * 60000}), Order({iOrder})]");
                     }
                     else
                     {
@@ -562,7 +565,7 @@ namespace ATTM_API.Helpers
                 }
 
                 // Add Compile node in TestProjectCsharp.csproj
-                doc.Load(Path.Combine(_appSettings.TestProjectCsharp, "TestProjectCSharp.csproj"));
+                doc.Load(Path.Combine(TestProjectCsharp, "TestProjectCSharp.csproj"));
                 nsmgr.AddNamespace("ns", "http://schemas.microsoft.com/developer/msbuild/2003");
                 XmlElement CompileElement = doc.CreateElement("Compile", "http://schemas.microsoft.com/developer/msbuild/2003");
 
@@ -577,7 +580,7 @@ namespace ATTM_API.Helpers
                 CompileElement.SetAttribute("Include", sIncludeValue);
                 XmlNode xmlCompileNode = doc.SelectSingleNode(sXpath, nsmgr);
                 xmlCompileNode.ParentNode.AppendChild(CompileElement);
-                doc.Save(Path.Combine(_appSettings.TestProjectCsharp, "TestProjectCSharp.csproj"));
+                doc.Save(Path.Combine(TestProjectCsharp, "TestProjectCSharp.csproj"));
             }
             #endregion
 
