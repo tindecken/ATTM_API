@@ -1,7 +1,7 @@
 pipeline {
   agent any
   stages {
-    stage('Show something') {
+    stage('Run app') {
       steps {
         sh 'dotnet run'
       }
