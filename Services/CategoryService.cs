@@ -57,15 +57,12 @@ namespace ATTM_API.Services
             try
             {
                 var existingTS = await _testsuites.Find<TestSuite>(t => t.tsId == ts.tsId).FirstOrDefaultAsync();
-                if(existingTS != null){
-                    return null;
-                }else {
-                    await _testsuites.InsertOneAsync(ts);
-                    var filter = Builders<Category>.Filter.Eq(cat => cat.Id, catId);
-                    var update = Builders<Category>.Update.Push<string>(cat => cat.TestSuites, ts.Id);
-                    await _categories.FindOneAndUpdateAsync(filter, update);
-                    return ts;
-                }
+                if (existingTS != null) return null;
+                await _testsuites.InsertOneAsync(ts);
+                var filter = Builders<Category>.Filter.Eq(cat => cat.Id, catId);
+                var update = Builders<Category>.Update.Push<string>(cat => cat.TestSuites, ts.Id);
+                await _categories.FindOneAndUpdateAsync(filter, update);
+                return ts;
             }
             catch (Exception ex)
             {
@@ -88,10 +85,12 @@ namespace ATTM_API.Services
                 foreach (var tsId in cat.TestSuites) {
                     JObject tsObject = new JObject();
                     JArray arrTG = new JArray();
+                    Logger.Debug($"tsId: {tsId}");
                     var ts = await _testsuites.Find<TestSuite>(ts => ts.Id == tsId).FirstOrDefaultAsync();
                     tsObject = (JObject)JToken.FromObject(ts);
                     tsObject["nodeType"] = "TestSuite";
                     tsObject["label"] = $"{ts.tsId}: {ts.Name}";
+                    tsObject["catId"] = $"{cat.Id}";
                     foreach (var tgId in ts.TestGroups)
                     {
                         JObject tgObject = new JObject();
@@ -100,6 +99,8 @@ namespace ATTM_API.Services
                         tgObject = (JObject)JToken.FromObject(tg);
                         tgObject["nodeType"] = "TestGroup";
                         tgObject["label"] = $"{tg.tgId}: {tg.Name}";
+                        tgObject["catId"] = $"{cat.Id}";
+                        tgObject["tsId"] = $"{ts.Id}";
                         foreach (var tcId in tg.TestCases)
                         {
                             JObject tcObject = new JObject();
@@ -107,6 +108,9 @@ namespace ATTM_API.Services
                             tcObject = (JObject)JToken.FromObject(tc);
                             tcObject["nodeType"] = "TestCase";
                             tcObject["label"] = $"{tc.tcId}: {tc.Name}";
+                            tsObject["catId"] = $"{cat.Id}";
+                            tsObject["tsId"] = $"{ts.Id}";
+                            tsObject["tgId"] = $"{tg.Id}";
                             tcObject["TestGroup"] = tg.Name;
                             tcObject["TestSuite"] = ts.Name;
                             tcObject["Category"] = cat.Name;

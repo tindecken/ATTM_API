@@ -32,18 +32,12 @@ namespace ATTM_API.Services
             try
             {
                 var existingTestCase = await _testcases.Find<TestCase>(t => t.tcId == tc.tcId).FirstOrDefaultAsync();
-                if (existingTestCase != null)
-                {
-                    return null;
-                }
-                else
-                {
-                    await _testcases.InsertOneAsync(tc);
-                    var filter = Builders<TestGroup>.Filter.Eq(tg => tg.Id, tgId);
-                    var update = Builders<TestGroup>.Update.Push<string>(tg => tg.TestCases, tc.Id);
-                    await _testgroups.FindOneAndUpdateAsync(filter, update);
-                    return tc;
-                }
+                if (existingTestCase != null) return null;
+                await _testcases.InsertOneAsync(tc);
+                var filter = Builders<TestGroup>.Filter.Eq(tg => tg.Id, tgId);
+                var update = Builders<TestGroup>.Update.Push<string>(tg => tg.TestCases, tc.Id);
+                await _testgroups.FindOneAndUpdateAsync(filter, update);
+                return tc;
             }
             catch (Exception ex)
             {

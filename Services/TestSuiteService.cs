@@ -31,18 +31,12 @@ namespace ATTM_API.Services
             try
             {
                 var existingTestGroup = await _testgroups.Find<TestGroup>(t => t.tgId == tg.tgId).FirstOrDefaultAsync();
-                if (existingTestGroup != null)
-                {
-                    return null;
-                }
-                else
-                {
-                    await _testgroups.InsertOneAsync(tg);
-                    var filter = Builders<TestSuite>.Filter.Eq(ts => ts.Id, tsId);
-                    var update = Builders<TestSuite>.Update.Push<string>(ts => ts.TestGroups, tg.Id);
-                    await _testsuites.FindOneAndUpdateAsync(filter, update);
-                    return tg;
-                }
+                if (existingTestGroup != null) return null;
+                await _testgroups.InsertOneAsync(tg);
+                var filter = Builders<TestSuite>.Filter.Eq(ts => ts.Id, tsId);
+                var update = Builders<TestSuite>.Update.Push<string>(ts => ts.TestGroups, tg.Id);
+                await _testsuites.FindOneAndUpdateAsync(filter, update);
+                return tg;
             }
             catch (Exception ex)
             {
