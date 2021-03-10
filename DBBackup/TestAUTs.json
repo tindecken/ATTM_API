@@ -1,0 +1,10 @@
+{"_id":{"$oid":"6018145d2cef25e3eaefbfcb"},"Name":"Chrome1","Description":"","Type":"100","Value":""}
+{"_id":{"$oid":"60181a7845a201e1e4ede14f"},"Name":"Chrome2","Description":"","Type":"BROWSER","Value":""}
+{"_id":{"$oid":"60181af535490a0cc5b43239"},"Name":"Chrome3","Description":"","Type":"BROWSER","Value":""}
+{"_id":{"$oid":"60181b12220db19239e78fc5"},"Name":"FireFox1","Description":"","Type":"BROWSER","Value":""}
+{"_id":{"$oid":"60181b1b47a65a0707ddbcd4"},"Name":"FireFox2","Description":"","Type":"BROWSER","Value":""}
+{"_id":{"$oid":"60181b26a7a93ea5e2ed8341"},"Name":"FireFox3","Description":"","Type":"BROWSER","Value":""}
+{"_id":{"$oid":"60181b6ecb452319c3ff4fa7"},"Name":"VSCode","Description":"","Type":"ELECTRON","Value":"C:\\Users\\nguyenh1\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe"}
+{"_id":{"$oid":"60181b846af79e2d67f47e11"},"Name":"None","Description":"","Type":"NONE","Value":""}
+{"_id":{"$oid":"60181bc9851605aa585ff8fe"},"Name":"Win","Description":"","Type":"WINAPP","Value":"C:\\Program Files\\temp.exe"}
+{"_id":{"$oid":"60181be7d0badea7d22e1225"},"Name":"Nokia8.1","Description":"","Type":"APPIUM","Value":""}
