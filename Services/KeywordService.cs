@@ -33,7 +33,7 @@ namespace ATTM_API.Services
             await _keywords.Find<Keyword>(keyword => keyword.Id == id).FirstOrDefaultAsync();
 
         public async Task<JObject> RefreshAsync() {
-            CSharpTestProjectHelper.GetKeywords();
+            TestProjectHelper.GetKeywords();
             using (var streamReader = new StreamReader(sKeywordListFile))
             {
                 string line;

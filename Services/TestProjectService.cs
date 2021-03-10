@@ -19,7 +19,7 @@ namespace ATTM_API.Services
 
         public async Task<JObject> generateCodeAsync(List<TestCase> testCases, string runType, bool isDebug = false)
         {
-            CSharpTestProjectHelper.GenerateCode(testCases, runType);
+            TestProjectHelper.GenerateCode(testCases, runType);
             JObject result = new JObject();
             // Delete Compile node in TestProjectCharp.csproj
             

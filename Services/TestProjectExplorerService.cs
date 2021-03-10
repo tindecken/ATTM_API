@@ -24,7 +24,7 @@ namespace ATTM_API.Services
             JArray arrResult = new JArray();
             //Assembly assembly = Assembly.LoadFrom(@"c:\dev\ibs_main\QA\QAutomate\RegressionSuite7\bin\Debug\RegressionSuite7.dll");
             //Assembly assembly = Assembly.LoadFrom(@"c:\dev\ibs_main\QA\QAutomate\APISuite\bin\Debug\APISuite.dll");
-            Assembly assembly = Assembly.LoadFrom(@"C:\TestFW\ReleaseSrc\TestProject\TestProjectCSharp.dll");
+            Assembly assembly = Assembly.LoadFrom(@"C:\dev\ATTM\TestProjectCSharp\bin\debug\TestProjectCSharp.dll");
             foreach (Type type in assembly.GetTypes())
             {
                 JArray arrTC = new JArray();

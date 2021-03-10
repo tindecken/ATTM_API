@@ -17,7 +17,7 @@ namespace ATTM_API.Models
         [JsonProperty("Name")]
         public string Name { get; set; } 
         public string tcId { get; set; }
-        public TestType Type { get; set; } = 0;
+        public string Type { get; set; } = string.Empty;    
         public TestStatus lastRunningStatus { get; set; } = 0;
         public bool isPrimary { get; set; } = false;
         public bool isDisabled { get; set; } = false;
@@ -32,9 +32,9 @@ namespace ATTM_API.Models
         public string Description { get; set; } = string.Empty;
         public int TimeOutInMinutes { get; set; } = 60;
         public TestCase DependOn { get; set; }
-        public List<TestStep> TestSteps { get; set; }
-        public string TestSuite { get; set; }
-        public string TestGroup { get; set; }
-        public string Category { get; set; }
+        public List<TestStep> TestSteps { get; set; } = new List<TestStep>();
+        public string CategoryName { get; set; }
+        public string TestSuiteId { get; set; } // not mongoId
+        public string  TestGroupId { get; set; } // not a mongoId
     }
 }
