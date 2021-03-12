@@ -28,7 +28,7 @@ namespace ATTM_API.Helpers
         private static DirectoryInfo drInfoRoot = new DirectoryInfo(sRootPath);
         public static string sProjectPath = drInfoRoot.Parent.Parent.Parent.Parent.FullName;
         public static string sTestCasesFolder = Path.Combine(sProjectPath, "TestProject", "TestCases");
-        public static string sTestProjectCsharpcsproj = Path.Combine(sProjectPath, "TestProject", "TestProject.csproj");
+        public static string sTestProjectcsproj = Path.Combine(sProjectPath, "TestProject", "TestProject.csproj");
         public static string sKeyWordsFolder = Path.Combine(sProjectPath, "TestProject", "Keywords");
         public static string sTestProjectFolder = drInfoRoot.Parent.FullName;
         public static string sTestProjectDLL = Path.Combine(sTestProjectFolder, "TestProject", "TestProject.dll");
@@ -244,14 +244,14 @@ namespace ATTM_API.Helpers
 
         public static void GenerateCode(List<TestCase> lstTestCases, string runType, bool isDebug = false)
         {
-            var TestProjectCsharp = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["TestProjectCsharp"];
+            var TestProject = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["TestProject"];
             var DefaultTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["DefaultTestCaseTimeOutInMinus"];
             var MaximumTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["MaximumTestCaseTimeOutInMinus"];
             var SupportBrowser = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["SupportBrowser"];
 
-            #region Delete item in file TestProjectCsharp.csproj
+            #region Delete item in file TestProject.csproj
             XmlDocument doc = new XmlDocument();
-            doc.Load(sTestProjectCsharpcsproj);
+            doc.Load(sTestProjectcsproj);
             XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
             nsmgr.AddNamespace("ns", "http://schemas.microsoft.com/developer/msbuild/2003");
             string sXpath = $@"ns:Project/ns:ItemGroup/ns:Compile[@Include]";
@@ -263,11 +263,11 @@ namespace ATTM_API.Helpers
                     node.ParentNode.RemoveChild(node);
                 }
             }
-            doc.Save(sTestProjectCsharpcsproj);
+            doc.Save(sTestProjectcsproj);
 
             #endregion
 
-            #region Delete all TestCases Folder (but subfolder EXCLUDE) in TestProjectCsharp
+            #region Delete all TestCases Folder (but subfolder EXCLUDE) in TestProject
 
             if (Directory.Exists(sTestCasesFolder))
             {
@@ -286,7 +286,7 @@ namespace ATTM_API.Helpers
             }
             else
             {
-                Logger.Error($"There's no TestCases Folder in TestProjectCsharp, please check");
+                Logger.Error($"There's no TestCases Folder in TestProject, please check");
             }
 
             #endregion
@@ -315,21 +315,20 @@ namespace ATTM_API.Helpers
 
                 //}
 
-                string tsCodeFile = Path.Combine(TestProjectCsharp, "TestCases", testcase.CategoryName, testcase.TestSuiteId + ".cs");
+                string tsCodeFile = Path.Combine(TestProject, "TestCases", testcase.CategoryName, testcase.TestSuiteId + ".cs");
 
                 //File.Create(tsCodeFile);
                 StringBuilder stringBuilder = new StringBuilder();
                 stringBuilder.AppendLine(@"using NUnit.Framework;");
                 stringBuilder.AppendLine(@"using NUnit.Framework.Internal;");
                 stringBuilder.AppendLine(@"using System;");
-                stringBuilder.AppendLine(@"using TestProjectCSharp.Framework;");
-                stringBuilder.AppendLine(@"using TestProjectCSharp.Framework.CustomAttributes;");
-                stringBuilder.AppendLine(@"using SQLServices;");
-                stringBuilder.AppendLine(@"using TestProjectCSharp.Keywords;");
-                stringBuilder.AppendLine(@"using TestProjectCSharp.Framework.WrapperFactory;");
-                stringBuilder.AppendLine(@"using TestProjectCSharp.Keywords.Saucedemo;");
+                stringBuilder.AppendLine(@"using TestProject.Framework;");
+                stringBuilder.AppendLine(@"using TestProject.Framework.CustomAttributes;");
+                stringBuilder.AppendLine(@"using TestProject.Keywords;");
+                stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
+                stringBuilder.AppendLine(@"using TestProject.Keywords.Saucedemo;");
                 stringBuilder.AppendLine("");
-                stringBuilder.AppendLine($@"namespace TestProjectCSharp.TestCases");
+                stringBuilder.AppendLine($@"namespace TestProject.TestCases");
                 stringBuilder.AppendLine(@"{");
                 stringBuilder.AppendLine("\t[TestFixture]");
                 stringBuilder.AppendLine($"\tclass {testcase.TestSuiteId} : SetupAndTearDown");
@@ -576,23 +575,23 @@ namespace ATTM_API.Helpers
                     file.WriteLine(stringBuilder.ToString());
                 }
 
-                // Add Compile node in TestProjectCsharp.csproj
-                doc.Load(Path.Combine(TestProjectCsharp, "TestProjectCSharp.csproj"));
-                nsmgr.AddNamespace("ns", "http://schemas.microsoft.com/developer/msbuild/2003");
-                XmlElement CompileElement = doc.CreateElement("Compile", "http://schemas.microsoft.com/developer/msbuild/2003");
+                // Add Compile node in TestProject.csproj
+                //doc.Load(Path.Combine(TestProject, "TestProject.csproj"));
+                //nsmgr.AddNamespace("ns", "http://schemas.microsoft.com/developer/msbuild/2003");
+                //XmlElement CompileElement = doc.CreateElement("Compile", "http://schemas.microsoft.com/developer/msbuild/2003");
 
-                // Get string from TestCases file. Exp: from: C:\dev\ATTM\TestProjectCsharp\TestCases\Appium2\Appium_Test2 - Copy.cs to: TestCases\Appium2\Appium_Test2 - Copy.cs
-                string sIncludeValue = string.Empty;
-                string separator = "TestCases";
-                int separatorIndex = tsCodeFile.IndexOf(separator, StringComparison.Ordinal);
-                if (separatorIndex >= 0)
-                {
-                    sIncludeValue = $"TestCases{tsCodeFile.Substring(separatorIndex + separator.Length)}";
-                }
-                CompileElement.SetAttribute("Include", sIncludeValue);
-                XmlNode xmlCompileNode = doc.SelectSingleNode(sXpath, nsmgr);
-                xmlCompileNode.ParentNode.AppendChild(CompileElement);
-                doc.Save(Path.Combine(TestProjectCsharp, "TestProjectCSharp.csproj"));
+                //// Get string from TestCases file. Exp: from: C:\dev\ATTM\TestProject\TestCases\Appium2\Appium_Test2 - Copy.cs to: TestCases\Appium2\Appium_Test2 - Copy.cs
+                //string sIncludeValue = string.Empty;
+                //string separator = "TestCases";
+                //int separatorIndex = tsCodeFile.IndexOf(separator, StringComparison.Ordinal);
+                //if (separatorIndex >= 0)
+                //{
+                //    sIncludeValue = $"TestCases{tsCodeFile.Substring(separatorIndex + separator.Length)}";
+                //}
+                //CompileElement.SetAttribute("Include", sIncludeValue);
+                //XmlNode xmlCompileNode = doc.SelectSingleNode(sXpath, nsmgr);
+                //xmlCompileNode.ParentNode.AppendChild(CompileElement);
+                //doc.Save(Path.Combine(TestProject, "TestProject.csproj"));
             }
             #endregion
 
