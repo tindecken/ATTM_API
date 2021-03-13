@@ -117,7 +117,7 @@ namespace ATTM_API.Services
                             }
                             else if (attInfo.GetType().ToString().Contains("CaseTypeAttribute"))
                             {
-                                PropertyInfo pi = attInfo.GetType().GetProperty("Type");
+                                PropertyInfo pi = attInfo.GetType().GetProperty("TestCaseType");
                                 String caseType = (String)(pi.GetValue(attInfo, null));
                                 Logger.Debug($"CaseType: {caseType}");
                                 testObject["CaseType"] = caseType;
@@ -146,7 +146,7 @@ namespace ATTM_API.Services
                             else if (attInfo.GetType().ToString().Contains("ReviewedAttribute"))
                             {
                                 testObject["isReviewed"] = true;
-                                PropertyInfo pi = attInfo.GetType().GetProperty("Type");
+                                PropertyInfo pi = attInfo.GetType().GetProperty("TestCaseType");
                                 bool isReviewPassed = pi.GetValue(attInfo, null).ToString().ToLower().Contains("pass") ? true : false;
                                 if (isReviewPassed)
                                 {

@@ -17,7 +17,7 @@ namespace ATTM_API.Models
         [JsonProperty("Name")]
         public string Name { get; set; } 
         public string tcId { get; set; }
-        public string Type { get; set; } = string.Empty;    
+        public string TestCaseType { get; set; }   
         public TestStatus lastRunningStatus { get; set; } = 0;
         public bool isPrimary { get; set; } = false;
         public bool isDisabled { get; set; } = false;

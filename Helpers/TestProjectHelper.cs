@@ -1,18 +1,14 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using ATTM_API.Models;
-using Microsoft.Extensions.Options;
 using MongoDB.Bson;
 using Newtonsoft.Json;
-using NUnit.Framework;
-using static System.Net.Mime.MediaTypeNames;
 using Formatting = Newtonsoft.Json.Formatting;
 using Microsoft.Extensions.Configuration;
 
@@ -229,7 +225,7 @@ namespace ATTM_API.Helpers
                         writer.WriteEndObject();
                     }
 
-                    writer.WriteEnd();                          //End Categories
+                    writer.WriteEnd(); //End Categories
                     writer.WriteEndObject();
                 }
 
@@ -381,7 +377,7 @@ namespace ATTM_API.Helpers
                     stringBuilder.AppendLine($"\t\t[Author(\"{tc.Designer}\")]");
                     stringBuilder.AppendLine($"\t\t[Team(\"{tc.Team}\")]");
                     stringBuilder.AppendLine($"\t\t[RunOwner(\"{Environment.MachineName}\")]");
-                    stringBuilder.AppendLine($"\t\t[Type(\"{tc.Type}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestCaseType(\"{tc.TestCaseType}\")]");
                     List<string> lstDistinctAUTs = new List<string>();
                     foreach (TestStep ts in tc.TestSteps)
                     {
@@ -569,29 +565,10 @@ namespace ATTM_API.Helpers
                 stringBuilder.AppendLine("\t}");
                 stringBuilder.AppendLine("}");
 
-
                 using (StreamWriter file = new StreamWriter(tsCodeFile))
                 {
                     file.WriteLine(stringBuilder.ToString());
                 }
-
-                // Add Compile node in TestProject.csproj
-                //doc.Load(Path.Combine(TestProject, "TestProject.csproj"));
-                //nsmgr.AddNamespace("ns", "http://schemas.microsoft.com/developer/msbuild/2003");
-                //XmlElement CompileElement = doc.CreateElement("Compile", "http://schemas.microsoft.com/developer/msbuild/2003");
-
-                //// Get string from TestCases file. Exp: from: C:\dev\ATTM\TestProject\TestCases\Appium2\Appium_Test2 - Copy.cs to: TestCases\Appium2\Appium_Test2 - Copy.cs
-                //string sIncludeValue = string.Empty;
-                //string separator = "TestCases";
-                //int separatorIndex = tsCodeFile.IndexOf(separator, StringComparison.Ordinal);
-                //if (separatorIndex >= 0)
-                //{
-                //    sIncludeValue = $"TestCases{tsCodeFile.Substring(separatorIndex + separator.Length)}";
-                //}
-                //CompileElement.SetAttribute("Include", sIncludeValue);
-                //XmlNode xmlCompileNode = doc.SelectSingleNode(sXpath, nsmgr);
-                //xmlCompileNode.ParentNode.AppendChild(CompileElement);
-                //doc.Save(Path.Combine(TestProject, "TestProject.csproj"));
             }
             #endregion
 
