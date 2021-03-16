@@ -20,6 +20,6 @@ namespace ATTM_API.Models
         [BsonElement("WorkItem")]
         public string WorkItem { get; set; } = string.Empty;
         [BsonElement("TestSuiteIds")]
-        public List<TestSuite> TestSuiteIds { get; set; }
+        public List<string> TestSuiteIds { get; set; }
     }
 }
