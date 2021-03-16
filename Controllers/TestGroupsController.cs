@@ -34,7 +34,7 @@ namespace ATTM_API.Controllers
             return testgroup;
         }
 
-        [HttpPost("{tgId:length(24)}/testcases")]
+        [HttpPost("{CodeName:length(24)}/testcases")]
         public async Task<ActionResult<TestCase>> CreateTestCase(string tgId, TestCase testCase)
         {
             var result = await _testGroupService.CreateTestCase(tgId, testCase);

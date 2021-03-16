@@ -1,5 +1,5 @@
-{"_id":{"$oid":"5f789694994c6ebfc44aaf8f"},"name":"Test Environment","Description":"","TestEnvCategories":[]}
+{"_id":{"$oid":"5f7f095000550356432fdcea"},"Name":"Test Envireon33ment","Description":"dfasdfsd","Categories":[]}
 {"_id":{"$oid":"5f789adc994c6ebfc44aaf90"},"name":"Test Envireonment","Description":"dfasdfsd","TestEnvCategories":[]}
+{"_id":{"$oid":"5f789694994c6ebfc44aaf8f"},"name":"Test Environment","Description":"","TestEnvCategories":[]}
 {"_id":{"$oid":"5f789b2a994c6ebfc44aaf91"},"name":"Test Envireon3ment","Description":"dfasdfsd","TestEnvCategories":[{"Name":"FPT","Description":"dfasdfsd","TestEnvNodes":[]}]}
 {"_id":{"$oid":"5f789b59994c6ebfc44aaf92"},"name":"Test Envireon33ment","Description":"dfasdfsd","TestEnvCategories":[{"Name":"FPT","Description":"dfasdfsd","TestEnvNodes":[{"Name":"kaka","Value":"dsfasdf","Description":""}]}]}
-{"_id":{"$oid":"5f7f095000550356432fdcea"},"Name":"Test Envireon33ment","Description":"dfasdfsd","Categories":[]}

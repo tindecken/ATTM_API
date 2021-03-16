@@ -30,11 +30,11 @@ namespace ATTM_API.Services
         public async Task<TestGroup> CreateTestGroup(string tsId, TestGroup tg) {
             try
             {
-                var existingTestGroup = await _testgroups.Find<TestGroup>(t => t.tgId == tg.tgId).FirstOrDefaultAsync();
+                var existingTestGroup = await _testgroups.Find<TestGroup>(t => t.CodeName == tg.CodeName).FirstOrDefaultAsync();
                 if (existingTestGroup != null) return null;
                 await _testgroups.InsertOneAsync(tg);
                 var filter = Builders<TestSuite>.Filter.Eq(ts => ts.Id, tsId);
-                var update = Builders<TestSuite>.Update.Push<string>(ts => ts.TestGroups, tg.Id);
+                var update = Builders<TestSuite>.Update.Push<string>(ts => ts.TestGroupIds, tg.Id);
                 await _testsuites.FindOneAndUpdateAsync(filter, update);
                 return tg;
             }

@@ -23,7 +23,7 @@ namespace ATTM_API.Helpers
         public static string sRootPath = Path.GetDirectoryName(sRootDLL);
         private static DirectoryInfo drInfoRoot = new DirectoryInfo(sRootPath);
         public static string sProjectPath = drInfoRoot.Parent.Parent.Parent.Parent.FullName;
-        public static string sTestCasesFolder = Path.Combine(sProjectPath, "TestProject", "TestCases");
+        public static string sTestCasesFolder = Path.Combine(sProjectPath, "TestProject", "TestCaseIds");
         public static string sTestProjectcsproj = Path.Combine(sProjectPath, "TestProject", "TestProject.csproj");
         public static string sKeyWordsFolder = Path.Combine(sProjectPath, "TestProject", "Keywords");
         public static string sTestProjectFolder = drInfoRoot.Parent.FullName;
@@ -254,7 +254,7 @@ namespace ATTM_API.Helpers
             XmlNodeList nodes = doc.SelectNodes(sXpath, nsmgr);
             foreach (XmlNode node in nodes)
             {
-                if (node.Attributes["Include"].Value.StartsWith("TestCases") && !node.Attributes["Include"].Value.Contains(@"TestCases\EXCLUDE"))
+                if (node.Attributes["Include"].Value.StartsWith("TestCaseIds") && !node.Attributes["Include"].Value.Contains(@"TestCaseIds\EXCLUDE"))
                 {
                     node.ParentNode.RemoveChild(node);
                 }
@@ -263,7 +263,7 @@ namespace ATTM_API.Helpers
 
             #endregion
 
-            #region Delete all TestCases Folder (but subfolder EXCLUDE) in TestProject
+            #region Delete all TestCaseIds Folder (but subfolder EXCLUDE) in TestProject
 
             if (Directory.Exists(sTestCasesFolder))
             {
@@ -282,7 +282,7 @@ namespace ATTM_API.Helpers
             }
             else
             {
-                Logger.Error($"There's no TestCases Folder in TestProject, please check");
+                Logger.Error($"There's no TestCaseIds Folder in TestProject, please check");
             }
 
             #endregion
@@ -311,7 +311,7 @@ namespace ATTM_API.Helpers
 
                 //}
 
-                string tsCodeFile = Path.Combine(TestProject, "TestCases", testcase.CategoryName, testcase.TestSuiteId + ".cs");
+                string tsCodeFile = Path.Combine(TestProject, "TestCaseIds", testcase.CategoryName, testcase.TestSuiteCodeName + ".cs");
 
                 //File.Create(tsCodeFile);
                 StringBuilder stringBuilder = new StringBuilder();
@@ -324,10 +324,10 @@ namespace ATTM_API.Helpers
                 stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
                 stringBuilder.AppendLine(@"using TestProject.Keywords.Saucedemo;");
                 stringBuilder.AppendLine("");
-                stringBuilder.AppendLine($@"namespace TestProject.TestCases");
+                stringBuilder.AppendLine($@"namespace TestProject.TestCaseIds");
                 stringBuilder.AppendLine(@"{");
                 stringBuilder.AppendLine("\t[TestFixture]");
-                stringBuilder.AppendLine($"\tclass {testcase.TestSuiteId} : SetupAndTearDown");
+                stringBuilder.AppendLine($"\tclass {testcase.TestSuiteCodeName} : SetupAndTearDown");
                 stringBuilder.AppendLine("\t{");
                 stringBuilder.AppendLine("\t\tstatic int RunId;");
                 stringBuilder.AppendLine("");
@@ -365,12 +365,12 @@ namespace ATTM_API.Helpers
                     {
                         stringBuilder.AppendLine($"\t\t[Test, Timeout({tc.TimeOutInMinutes * 60000}), Order({iOrder})]");
                     }
-                    stringBuilder.AppendLine($"\t\t[TestCaseId(\"{tc.tcId}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestCaseId(\"{tc.CodeName}\")]");
                     stringBuilder.AppendLine($"\t\t[TestCaseName(\"{tc.Name}\")]");
                     stringBuilder.AppendLine($"\t\t[Description(\"{tc.Description}\")]");
                     stringBuilder.AppendLine($"\t\t[Category(\"{tc.CategoryName}\")]");
-                    stringBuilder.AppendLine($"\t\t[TestSuite(\"{tc.TestSuiteId}\")]");
-                    stringBuilder.AppendLine($"\t\t[TestGroup(\"{tc.TestGroupId}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestSuite(\"{tc.TestSuiteCodeName}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestGroup(\"{tc.TestGroupCodeName}\")]");
                     if (isDebug) stringBuilder.AppendLine($"\t\t[IsDebug(\"true\")]");
                     else stringBuilder.AppendLine($"\t\t[IsDebug(\"false\")]");
                     stringBuilder.AppendLine($"\t\t[RunType(\"{runType}\")]");
@@ -396,7 +396,7 @@ namespace ATTM_API.Helpers
                     }
                     stringBuilder.AppendLine($"\t\t[WorkItem(\"{tc.WorkItem}\")]");
                     stringBuilder.AppendLine($"\t\t// {tc.Name}");
-                    stringBuilder.AppendLine($"\t\tpublic void {tc.tcId}()");
+                    stringBuilder.AppendLine($"\t\tpublic void {tc.CodeName}()");
                     stringBuilder.AppendLine("\t\t{");
 
 

@@ -34,7 +34,7 @@ namespace ATTM_API.Controllers
             return testsuite;
         }
 
-        [HttpPost("{tsId:length(24)}/testgroups")]
+        [HttpPost("{CodeName:length(24)}/testgroups")]
         public async Task<ActionResult<TestSuite>> CreateTestSuite(string tsId, TestGroup testGroup)
         {
             var result = await _testSuiteService.CreateTestGroup(tsId, testGroup);

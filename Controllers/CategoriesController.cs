@@ -43,6 +43,12 @@ namespace ATTM_API.Controllers
             return await _categoryService.GetAllAsync();
         }
 
+        [HttpGet("getAllCategories")]
+        public async Task<List<Category>> getAllCategories()
+        {
+            return await _categoryService.GetAllCategoriesAsync();
+        }
+
         [HttpPost]
         public async Task<ActionResult<Category>> Create(Category category)
         {
@@ -62,7 +68,7 @@ namespace ATTM_API.Controllers
             if(result != null) {
                 return CreatedAtRoute("GetTestSuite", new { controller = "testsuites", id = result.Id }, testSuite);
             }else {
-                return StatusCode(409, $"TestSuite '{testSuite.tsId}' already exists.");
+                return StatusCode(409, $"TestSuite '{testSuite.CodeName}' already exists.");
             }
         }
 
