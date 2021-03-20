@@ -54,30 +54,13 @@ namespace ATTM_API.Services
 
         public async Task<TestSuite> CreateTestSuite(string catId, TestSuite ts)
         {
-            try
-            {
-                var existingTS = await _testsuites.Find<TestSuite>(t => t.CodeName == ts.CodeName).FirstOrDefaultAsync();
-                if (existingTS != null) return null;
-                await _testsuites.InsertOneAsync(ts);
-                var filter = Builders<Category>.Filter.Eq(cat => cat.Id, catId);
-                var update = Builders<Category>.Update.Push<string>(cat => cat.TestSuiteIds, ts.Id);
-                await _categories.FindOneAndUpdateAsync(filter, update);
-                return ts;
-            }
-            catch (Exception ex)
-            {
-                throw ex;   
-            }
-        }
-        public async Task<List<Category>> GetAllCategoriesAsync()
-        {
-            List<Category> lstCategories = new List<Category>();
-            var allCats = await _categories.Find(new BsonDocument()).ToListAsync();
-            foreach (var cat in allCats)
-            {
-                lstCategories.Add(cat);
-            }
-            return lstCategories;
+            var existingTS = await _testsuites.Find<TestSuite>(t => t.CodeName == ts.CodeName).FirstOrDefaultAsync();
+            if (existingTS != null) return null;
+            await _testsuites.InsertOneAsync(ts);
+            var filter = Builders<Category>.Filter.Eq(cat => cat.Id, catId);
+            var update = Builders<Category>.Update.Push(cat => cat.TestSuiteIds, ts.Id);
+            await _categories.FindOneAndUpdateAsync(filter, update);
+            return ts;
         }
         public async Task<JObject> GetAllAsync()
         {
@@ -88,42 +71,23 @@ namespace ATTM_API.Services
             {
                 JObject catObject = new JObject();
                 catObject = (JObject)JToken.FromObject(cat);
-                catObject["nodeType"] = "Category";
-                catObject["label"] = cat.Name;
                 JArray arrTS = new JArray();
                 foreach (var tsId in cat.TestSuiteIds) {
                     JObject tsObject = new JObject();
                     JArray arrTG = new JArray();
-                    Logger.Debug($"CodeName: {tsId}");
-                    var ts = await _testsuites.Find<TestSuite>(ts => ts.Id == tsId).FirstOrDefaultAsync();
+                    var ts = await _testsuites.Find<TestSuite>(s => s.Id == tsId).FirstOrDefaultAsync();
                     tsObject = (JObject)JToken.FromObject(ts);
-                    tsObject["nodeType"] = "TestSuite";
-                    tsObject["label"] = $"{ts.CodeName}: {ts.Name}";
-                    tsObject["catId"] = $"{cat.Id}";
-                    tsObject[""] = ts.CodeName;
                     foreach (var tgId in ts.TestGroupIds)
                     {
                         JObject tgObject = new JObject();
                         JArray arrTC = new JArray();
-                        var tg = await _testgroups.Find<TestGroup>(tg => tg.Id == tgId).FirstOrDefaultAsync();
+                        var tg = await _testgroups.Find<TestGroup>(g => g.Id == tgId).FirstOrDefaultAsync();
                         tgObject = (JObject)JToken.FromObject(tg);
-                        tgObject["nodeType"] = "TestGroup";
-                        tgObject["label"] = $"{tg.CodeName}: {tg.Name}";
-                        tgObject["catId"] = $"{cat.Id}";
-                        tgObject["CodeName"] = $"{ts.Id}";
                         foreach (var tcId in tg.TestCaseIds)
                         {
                             JObject tcObject = new JObject();
-                            var tc = await _testcases.Find<TestCase>(tc => tc.Id == tcId).FirstOrDefaultAsync();
+                            var tc = await _testcases.Find<TestCase>(t => t.Id == tcId).FirstOrDefaultAsync();
                             tcObject = (JObject)JToken.FromObject(tc);
-                            tcObject["nodeType"] = "TestCase";
-                            tcObject["label"] = $"{tc.CodeName}: {tc.Name}";
-                            tsObject["catId"] = $"{cat.Id}";
-                            tsObject["CodeName"] = $"{ts.Id}";
-                            tsObject["CodeName"] = $"{tg.Id}";
-                            tcObject["TestGroup"] = tg.Name;
-                            tcObject["TestSuite"] = ts.Name;
-                            tcObject["Category"] = cat.Name;
                             arrTC.Add(tcObject);
                         }
                         tgObject["children"] = arrTC;

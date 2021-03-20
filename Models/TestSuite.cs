@@ -22,6 +22,7 @@ namespace ATTM_API.Models
         public string WorkItem { get; set; } = string.Empty;
         [BsonElement("TestGroupIds")]
         public List<string> TestGroupIds { get; set; } = new List<string>();
+        public string CategoryId { get; set; }
 
     }
 }

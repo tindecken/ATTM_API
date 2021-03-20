@@ -86,12 +86,9 @@ namespace ATTM_API
                 .AllowAnyOrigin()
                 .AllowAnyMethod()
                 .AllowAnyHeader());
-
+            app.UseWebSockets();
             // custom jwt auth middleware
             app.UseMiddleware<JwtMiddleware>();
-
-            
-
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();

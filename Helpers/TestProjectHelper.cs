@@ -295,9 +295,9 @@ namespace ATTM_API.Helpers
             {
                 Logger.Debug($"TestCase: {JsonConvert.SerializeObject(testcase)}");
                 // Create Category folder if not exist
-                if (!Directory.Exists(Path.Combine(sTestCasesFolder, testcase.CategoryName)))
+                if (!Directory.Exists(Path.Combine(sTestCasesFolder, testcase.CategoryId)))
                 {
-                    Directory.CreateDirectory(Path.Combine(sTestCasesFolder, testcase.CategoryName));
+                    Directory.CreateDirectory(Path.Combine(sTestCasesFolder, testcase.CategoryId));
                 }
 
                 // Create TestSuite file into Category folder
@@ -311,7 +311,7 @@ namespace ATTM_API.Helpers
 
                 //}
 
-                string tsCodeFile = Path.Combine(TestProject, "TestCaseIds", testcase.CategoryName, testcase.TestSuiteCodeName + ".cs");
+                string tsCodeFile = Path.Combine(TestProject, "TestCaseIds", testcase.CategoryId, testcase.TestSuiteId + ".cs");
 
                 //File.Create(tsCodeFile);
                 StringBuilder stringBuilder = new StringBuilder();
@@ -327,7 +327,7 @@ namespace ATTM_API.Helpers
                 stringBuilder.AppendLine($@"namespace TestProject.TestCaseIds");
                 stringBuilder.AppendLine(@"{");
                 stringBuilder.AppendLine("\t[TestFixture]");
-                stringBuilder.AppendLine($"\tclass {testcase.TestSuiteCodeName} : SetupAndTearDown");
+                stringBuilder.AppendLine($"\tclass {testcase.TestSuiteId} : SetupAndTearDown");
                 stringBuilder.AppendLine("\t{");
                 stringBuilder.AppendLine("\t\tstatic int RunId;");
                 stringBuilder.AppendLine("");
@@ -368,9 +368,9 @@ namespace ATTM_API.Helpers
                     stringBuilder.AppendLine($"\t\t[TestCaseId(\"{tc.CodeName}\")]");
                     stringBuilder.AppendLine($"\t\t[TestCaseName(\"{tc.Name}\")]");
                     stringBuilder.AppendLine($"\t\t[Description(\"{tc.Description}\")]");
-                    stringBuilder.AppendLine($"\t\t[Category(\"{tc.CategoryName}\")]");
-                    stringBuilder.AppendLine($"\t\t[TestSuite(\"{tc.TestSuiteCodeName}\")]");
-                    stringBuilder.AppendLine($"\t\t[TestGroup(\"{tc.TestGroupCodeName}\")]");
+                    stringBuilder.AppendLine($"\t\t[Category(\"{tc.CategoryId}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestSuite(\"{tc.TestSuiteId}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestGroup(\"{tc.TestGroupId}\")]");
                     if (isDebug) stringBuilder.AppendLine($"\t\t[IsDebug(\"true\")]");
                     else stringBuilder.AppendLine($"\t\t[IsDebug(\"false\")]");
                     stringBuilder.AppendLine($"\t\t[RunType(\"{runType}\")]");
@@ -382,7 +382,7 @@ namespace ATTM_API.Helpers
                     foreach (TestStep ts in tc.TestSteps)
                     {
                         if (string.IsNullOrEmpty(ts.Keyword)) continue;
-                        if (ts.isDisabled || ts.isComment || ts.Keyword.ToUpper().Equals("CLEANUP")) continue;
+                        if (ts.IsDisabled || ts.IsDisabled || ts.Keyword.ToUpper().Equals("CLEANUP")) continue;
                         bool containsItem = lstDistinctAUTs.Any(item => item.ToUpper().Equals(ts.TestAUT.ToUpper()));
                         if (!containsItem) lstDistinctAUTs.Add(ts.TestAUT);
                     }
@@ -412,7 +412,7 @@ namespace ATTM_API.Helpers
                     List<TestStep> lstDistinctTestSteps = new List<TestStep>();
                     foreach (TestStep ts in tc.TestSteps)
                     {
-                        if (ts.isDisabled || ts.isComment || ts.Keyword.ToUpper().Equals("CLEANUP")) continue;
+                        if (ts.IsDisabled || ts.IsComment || ts.Keyword.ToUpper().Equals("CLEANUP")) continue;
                         bool containsItem = lstDistinctTestSteps.Any(item => item.Keyword == ts.Keyword && item.TestAUT == ts.TestAUT);
                         if (!containsItem) lstDistinctTestSteps.Add(ts);
                     }
@@ -450,13 +450,13 @@ namespace ATTM_API.Helpers
                         // BEFORE CLEANUP
                         if (i < indexCleanUp)
                         {
-                            if (tc.TestSteps[i].isComment)
+                            if (tc.TestSteps[i].IsComment)
                             {
                                 sBuilderKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
                             }
                             else
                             {
-                                if (tc.TestSteps[i].isDisabled)
+                                if (tc.TestSteps[i].IsDisabled)
                                 {
                                     sBuilderKeywords.Append("\t\t\t// ");
                                 }
@@ -504,13 +504,13 @@ namespace ATTM_API.Helpers
                                 isTearDownCommentAdded = true;
                             }
 
-                            if (tc.TestSteps[i].isComment)
+                            if (tc.TestSteps[i].IsComment)
                             {
                                 sBuilderCleanUpKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
                             }
                             else
                             {
-                                if (tc.TestSteps[i].isDisabled)
+                                if (tc.TestSteps[i].IsDisabled)
                                 {
                                     sBuilderCleanUpKeywords.Append("\t\t\t// ");
                                 }

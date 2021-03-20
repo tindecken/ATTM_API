@@ -43,12 +43,6 @@ namespace ATTM_API.Controllers
             return await _categoryService.GetAllAsync();
         }
 
-        [HttpGet("getAllCategories")]
-        public async Task<List<Category>> getAllCategories()
-        {
-            return await _categoryService.GetAllCategoriesAsync();
-        }
-
         [HttpPost]
         public async Task<ActionResult<Category>> Create(Category category)
         {
