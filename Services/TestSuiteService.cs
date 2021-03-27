@@ -35,7 +35,7 @@ namespace ATTM_API.Services
                 await _testgroups.InsertOneAsync(tg);
                 var filter = Builders<TestSuite>.Filter.Eq(ts => ts.Id, tsId);
                 var update = Builders<TestSuite>.Update.Push<string>(ts => ts.TestGroupIds, tg.Id);
-                await _testsuites.FindOneAndUpdateAsync(filter, update);
+                var a = await _testsuites.FindOneAndUpdateAsync(filter, update);
                 return tg;
             }
             catch (Exception ex)

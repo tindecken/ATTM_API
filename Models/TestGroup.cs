@@ -18,5 +18,7 @@ namespace ATTM_API.Models
         public string CodeName { get; set; }
         public string Description { get; set; } = string.Empty;
         public List<string> TestCaseIds { get; set; } = new List<string>();
+        public string CategoryId { get; set; }
+        public string TestSuiteId { get; set; }
     }
 }
