@@ -7,12 +7,13 @@ using Newtonsoft.Json;
 namespace ATTM_API.Models
 {
     [BsonIgnoreExtraElements]
-    public class Keyword
+    public class KeywordFeature
     {
-        [BsonId]
-        [BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
-        [BsonExtraElements]
-        public BsonDocument categories { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+        public string Owner { get; set; }
+        public List<TestParam> Params;
+        public DateTime CreatedDate;
+        public List<string> ImageDescriptionIds;
     }
 }

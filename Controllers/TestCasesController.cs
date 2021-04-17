@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using NUnit.Framework.Internal;
 
 namespace ATTM_API.Controllers
 {
@@ -13,7 +14,7 @@ namespace ATTM_API.Controllers
     public class TestCasesController : ControllerBase
     {
         private readonly TestCaseService _testCaseService;
-
+        private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
         public TestCasesController(TestCaseService testCaseService)
         {
             _testCaseService = testCaseService;
@@ -39,6 +40,7 @@ namespace ATTM_API.Controllers
         [HttpPost("savetestcase")]
         public async Task<ActionResult<JObject>> SaveTestCase(TestCase tc)
         {
+            Logger.Debug($"SaveTestCase: {tc}");
             return await _testCaseService.SaveTestCaseAsync(tc);
         }
     }

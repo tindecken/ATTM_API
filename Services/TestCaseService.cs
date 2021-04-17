@@ -29,6 +29,7 @@ namespace ATTM_API.Services
             await _testcases.Find<TestCase>(tc => tc.Id == id).FirstOrDefaultAsync();
         public async Task<JObject> SaveTestCaseAsync(TestCase tc)
         {
+            Logger.Debug("-- Save Test Case --");
             JObject result = new JObject();
             Logger.Debug($"TestCase: {tc}");
             var filter = Builders<TestCase>.Filter.Eq("_id", ObjectId.Parse(tc.Id));
@@ -36,6 +37,7 @@ namespace ATTM_API.Services
             if (test == null) throw new Exception($"Can't find test with id {tc.Id}");
             await _testcases.ReplaceOneAsync(filter, tc);
             result.Add("message", "Saved test !");
+            Logger.Debug("-- END Save Test Case --");
             return result;
         }
     }

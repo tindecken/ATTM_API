@@ -27,13 +27,10 @@ namespace ATTM_API.Services
 
         public List<Keyword> Get() =>
             _keywords.Find(new BsonDocument()).ToList();
-            
-
-        public async Task<Keyword> Get(string id) =>
-            await _keywords.Find<Keyword>(keyword => keyword.Id == id).FirstOrDefaultAsync();
 
         public async Task<JObject> RefreshAsync() {
             TestProjectHelper.GetKeywords();
+            Logger.Debug($"sKeywordListFile: {sKeywordListFile}");
             using (var streamReader = new StreamReader(sKeywordListFile))
             {
                 string line;

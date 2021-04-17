@@ -11,10 +11,12 @@ using MongoDB.Bson;
 using Newtonsoft.Json;
 using Formatting = Newtonsoft.Json.Formatting;
 using Microsoft.Extensions.Configuration;
+using MongoDB.Driver;
 
 
 namespace ATTM_API.Helpers
 {
+    
     public class TestProjectHelper
     {
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
@@ -36,6 +38,15 @@ namespace ATTM_API.Helpers
         public static string sPatternParam = @"/// <param.*</param>$";
         public static string sPatternGroupKeyword = @"public void (?<KeywordName>.+)\((?<Params>.+)\).*";
         public static string sPatternGroupParam = "<param name=\"(?<ParamName>.+)\">(?<ParamDescription>.+)Exp:(?<ParamExampleValue>.+)</param>";
+
+        private static IMongoCollection<TestAUT> _testauts;
+
+        public TestProjectHelper(IATTMDatabaseSettings settings)
+        {
+            var client = new MongoClient(settings.ConnectionString);
+            var database = client.GetDatabase(settings.DatabaseName);
+            _testauts = database.GetCollection<TestAUT>(settings.TestAUTsCollectionName);
+        }
 
         /// <summary>
         /// Get the keyword list from Test\Keywords
@@ -59,7 +70,7 @@ namespace ATTM_API.Helpers
                     writer.WriteValue($"{ObjectId.GenerateNewId()}");
                     writer.WritePropertyName("refreshDate");
                     writer.WriteValue(DateTime.UtcNow);
-                    writer.WritePropertyName("categories");     //Start Categories
+                    writer.WritePropertyName("Categories");     //Start Categories
                     writer.WriteStartArray();
 
                     DirectoryInfo diKeywordFolder = new DirectoryInfo(sKeyWordsFolder);
@@ -238,7 +249,7 @@ namespace ATTM_API.Helpers
             }
         }
 
-        public static void GenerateCode(List<TestCase> lstTestCases, string runType, bool isDebug = false)
+        public static async void GenerateCode(List<TestCase> lstTestCases, string runType, bool isDebug = false)
         {
             var TestProject = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["TestProject"];
             var DefaultTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["DefaultTestCaseTimeOutInMinus"];
@@ -378,20 +389,27 @@ namespace ATTM_API.Helpers
                     stringBuilder.AppendLine($"\t\t[Team(\"{tc.Team}\")]");
                     stringBuilder.AppendLine($"\t\t[RunOwner(\"{Environment.MachineName}\")]");
                     stringBuilder.AppendLine($"\t\t[TestCaseType(\"{tc.TestCaseType}\")]");
-                    List<string> lstDistinctAUTs = new List<string>();
+                    List<string> lstDistinctAUTIds = new List<string>();
+                    List<TestAUT> lstDistinctAUTs = new List<TestAUT>();
                     foreach (TestStep ts in tc.TestSteps)
                     {
                         if (string.IsNullOrEmpty(ts.Keyword)) continue;
                         if (ts.IsDisabled || ts.IsDisabled || ts.Keyword.ToUpper().Equals("CLEANUP")) continue;
-                        bool containsItem = lstDistinctAUTs.Any(item => item.ToUpper().Equals(ts.TestAUT.ToUpper()));
-                        if (!containsItem) lstDistinctAUTs.Add(ts.TestAUT);
+                        bool containsItem = lstDistinctAUTIds.Any(item => item.ToUpper().Equals(ts.TestAUTId.ToUpper()));
+                        if (!containsItem) lstDistinctAUTIds.Add(ts.TestAUTId);
                     }
-                    //Base on testAUTName ==> get testAUTType == BROWSER, expected to know how many WebDriver used in testcase.
-                    foreach (string aut in lstDistinctAUTs)
+
+                    foreach (string autId in lstDistinctAUTIds)
                     {
-                        if (lstSupportBrowser.Contains(aut))
+                        var testAUT = await _testauts.Find<TestAUT>(aut => aut.Id == autId).FirstOrDefaultAsync();
+                        lstDistinctAUTs.Add(testAUT);
+                    }
+
+                    foreach (TestAUT aut in lstDistinctAUTs)
+                    {
+                        if (lstSupportBrowser.Contains(aut.Name))
                         {
-                            stringBuilder.AppendLine($"\t\t[WebDriver(\"{aut}\")]");
+                            stringBuilder.AppendLine($"\t\t[WebDriver(\"{aut.Name}\")]");
                         }
                     }
                     stringBuilder.AppendLine($"\t\t[WorkItem(\"{tc.WorkItem}\")]");
@@ -400,11 +418,11 @@ namespace ATTM_API.Helpers
                     stringBuilder.AppendLine("\t\t{");
 
 
-                    foreach (string aut in lstDistinctAUTs)
+                    foreach (TestAUT aut in lstDistinctAUTs)
                     {
-                        if (lstSupportBrowser.Contains(aut))
+                        if (lstSupportBrowser.Contains(aut.Name))
                         {
-                            stringBuilder.AppendLine($"\t\t\tWebDriverFactory.InitBrowser(\"{aut}\");");
+                            stringBuilder.AppendLine($"\t\t\tWebDriverFactory.InitBrowser(\"{aut.Name}\");");
                         }
                     }
 
@@ -413,21 +431,22 @@ namespace ATTM_API.Helpers
                     foreach (TestStep ts in tc.TestSteps)
                     {
                         if (ts.IsDisabled || ts.IsComment || ts.Keyword.ToUpper().Equals("CLEANUP")) continue;
-                        bool containsItem = lstDistinctTestSteps.Any(item => item.Keyword == ts.Keyword && item.TestAUT == ts.TestAUT);
+                        bool containsItem = lstDistinctTestSteps.Any(item => item.Keyword == ts.Keyword && item.TestAUTId == ts.TestAUTId);
                         if (!containsItem) lstDistinctTestSteps.Add(ts);
                     }
 
                     foreach (TestStep ts in lstDistinctTestSteps)
                     {
-                        if (lstSupportBrowser.Contains(ts.TestAUT))
+                        TestAUT aut = await _testauts.Find<TestAUT>(aut => aut.Id == ts.TestAUTId).FirstOrDefaultAsync();
+                        if (lstSupportBrowser.Contains(aut.Name))
                         {
-                            stringBuilder.Append($"\t\t\t{ts.Feature} {ts.TestAUT}_{ts.Feature} = new {ts.Feature}(WebDriverFactory.Driver");
-                            stringBuilder.Append($"{ts.TestAUT.Substring(ts.TestAUT.Length - 1)}");
+                            stringBuilder.Append($"\t\t\t{ts.Feature} {aut.Name}_{ts.Feature} = new {ts.Feature}(WebDriverFactory.Driver");
+                            stringBuilder.Append($"{aut.Name.Substring(aut.Name.Length - 1)}");
                             stringBuilder.AppendLine(");");
                         }
                         else
                         {
-                            stringBuilder.AppendLine($"\t\t\t{ts.Feature} {ts.TestAUT}_{ts.Feature} = new {ts.Feature}();");
+                            stringBuilder.AppendLine($"\t\t\t{ts.Feature} {aut.Name}_{ts.Feature} = new {ts.Feature}();");
                         }
                     }
 
@@ -464,8 +483,8 @@ namespace ATTM_API.Helpers
                                 {
                                     sBuilderKeywords.Append("\t\t\t");
                                 }
-
-                                sBuilderKeywords.Append($"{tc.TestSteps[i].TestAUT}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Keyword}(");
+                                TestAUT aut = await _testauts.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                sBuilderKeywords.Append($"{aut.Name}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Keyword}(");
                                 foreach (TestParam param in tc.TestSteps[i].Params)
                                 {
                                     if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
@@ -518,8 +537,8 @@ namespace ATTM_API.Helpers
                                 {
                                     sBuilderCleanUpKeywords.Append("\t\t\t");
                                 }
-
-                                sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {tc.TestSteps[i].TestAUT}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Keyword}(");
+                                TestAUT aut = await _testauts.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {aut.Name}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Keyword}(");
                                 foreach (TestParam param in tc.TestSteps[i].Params)
                                 {
                                     if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)

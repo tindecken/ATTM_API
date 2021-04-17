@@ -28,18 +28,5 @@ namespace ATTM_API.Controllers
         public async Task<JObject> Refresh() {
             return await _keywordService.RefreshAsync();
         }
-
-        [HttpGet("{id:length(24)}", Name = "GetKeyword")]
-        public async Task<ActionResult<Keyword>> Get(string id)
-        {
-            var keyword = await _keywordService.Get(id);
-
-            if (keyword == null)
-            {
-                return NotFound();
-            }
-
-            return keyword;
-        }
     }
 }
