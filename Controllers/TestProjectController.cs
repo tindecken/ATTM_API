@@ -19,9 +19,9 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost("generatecode")]
-        public async Task<JObject> generateCode([FromBody]List<TestCase> testcases)
+        public JObject generateCode([FromBody]List<TestCase> testcases)
         {
-            return await _testProjectService.generateCodeAsync(testcases, "Debug");
+            return _testProjectService.GenerateCode(testcases, "Debug");
         }
     }
 }

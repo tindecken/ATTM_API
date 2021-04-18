@@ -25,7 +25,7 @@ namespace ATTM_API.Helpers
         public static string sRootPath = Path.GetDirectoryName(sRootDLL);
         private static DirectoryInfo drInfoRoot = new DirectoryInfo(sRootPath);
         public static string sProjectPath = drInfoRoot.Parent.Parent.Parent.Parent.FullName;
-        public static string sTestCasesFolder = Path.Combine(sProjectPath, "TestProject", "TestCaseIds");
+        public static string sTestCasesFolder = Path.Combine(sProjectPath, "TestProject", "TestCases");
         public static string sTestProjectcsproj = Path.Combine(sProjectPath, "TestProject", "TestProject.csproj");
         public static string sKeyWordsFolder = Path.Combine(sProjectPath, "TestProject", "Keywords");
         public static string sTestProjectFolder = drInfoRoot.Parent.FullName;
@@ -39,14 +39,7 @@ namespace ATTM_API.Helpers
         public static string sPatternGroupKeyword = @"public void (?<KeywordName>.+)\((?<Params>.+)\).*";
         public static string sPatternGroupParam = "<param name=\"(?<ParamName>.+)\">(?<ParamDescription>.+)Exp:(?<ParamExampleValue>.+)</param>";
 
-        private static IMongoCollection<TestAUT> _testauts;
-
-        public TestProjectHelper(IATTMDatabaseSettings settings)
-        {
-            var client = new MongoClient(settings.ConnectionString);
-            var database = client.GetDatabase(settings.DatabaseName);
-            _testauts = database.GetCollection<TestAUT>(settings.TestAUTsCollectionName);
-        }
+        
 
         /// <summary>
         /// Get the keyword list from Test\Keywords
@@ -249,7 +242,7 @@ namespace ATTM_API.Helpers
             }
         }
 
-        public static async void GenerateCode(List<TestCase> lstTestCases, string runType, bool isDebug = false)
+        public static async void GenerateCode(List<TestCase> lstTestCases, string runType, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestAUT> testAUTs, bool isDebug = false)
         {
             var TestProject = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["TestProject"];
             var DefaultTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["DefaultTestCaseTimeOutInMinus"];
@@ -305,10 +298,12 @@ namespace ATTM_API.Helpers
             foreach (var testcase in lstTestCases)
             {
                 Logger.Debug($"TestCase: {JsonConvert.SerializeObject(testcase)}");
+                var category = await categories.Find<Category>(cat => cat.Id == testcase.CategoryId).FirstOrDefaultAsync();
+                var testSuite = await testsuites.Find<TestSuite>(ts => ts.Id == testcase.TestSuiteId).FirstOrDefaultAsync();
                 // Create Category folder if not exist
-                if (!Directory.Exists(Path.Combine(sTestCasesFolder, testcase.CategoryId)))
+                if (!Directory.Exists(Path.Combine(sTestCasesFolder, category.Name)))
                 {
-                    Directory.CreateDirectory(Path.Combine(sTestCasesFolder, testcase.CategoryId));
+                    Directory.CreateDirectory(Path.Combine(sTestCasesFolder, category.Name));
                 }
 
                 // Create TestSuite file into Category folder
@@ -322,7 +317,7 @@ namespace ATTM_API.Helpers
 
                 //}
 
-                string tsCodeFile = Path.Combine(TestProject, "TestCaseIds", testcase.CategoryId, testcase.TestSuiteId + ".cs");
+                string tsCodeFile = Path.Combine(TestProject, "TestCases", category.Name, testSuite.Name + ".cs");
 
                 //File.Create(tsCodeFile);
                 StringBuilder stringBuilder = new StringBuilder();
@@ -335,10 +330,10 @@ namespace ATTM_API.Helpers
                 stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
                 stringBuilder.AppendLine(@"using TestProject.Keywords.Saucedemo;");
                 stringBuilder.AppendLine("");
-                stringBuilder.AppendLine($@"namespace TestProject.TestCaseIds");
+                stringBuilder.AppendLine($@"namespace TestProject.TestCases.{category.Name}");
                 stringBuilder.AppendLine(@"{");
                 stringBuilder.AppendLine("\t[TestFixture]");
-                stringBuilder.AppendLine($"\tclass {testcase.TestSuiteId} : SetupAndTearDown");
+                stringBuilder.AppendLine($"\tclass {testSuite.Name} : SetupAndTearDown");
                 stringBuilder.AppendLine("\t{");
                 stringBuilder.AppendLine("\t\tstatic int RunId;");
                 stringBuilder.AppendLine("");
@@ -401,7 +396,7 @@ namespace ATTM_API.Helpers
 
                     foreach (string autId in lstDistinctAUTIds)
                     {
-                        var testAUT = await _testauts.Find<TestAUT>(aut => aut.Id == autId).FirstOrDefaultAsync();
+                        var testAUT = await testAUTs.Find<TestAUT>(aut => aut.Id == autId).FirstOrDefaultAsync();
                         lstDistinctAUTs.Add(testAUT);
                     }
 
@@ -437,16 +432,16 @@ namespace ATTM_API.Helpers
 
                     foreach (TestStep ts in lstDistinctTestSteps)
                     {
-                        TestAUT aut = await _testauts.Find<TestAUT>(aut => aut.Id == ts.TestAUTId).FirstOrDefaultAsync();
+                        TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == ts.TestAUTId).FirstOrDefaultAsync();
                         if (lstSupportBrowser.Contains(aut.Name))
                         {
-                            stringBuilder.Append($"\t\t\t{ts.Feature} {aut.Name}_{ts.Feature} = new {ts.Feature}(WebDriverFactory.Driver");
+                            stringBuilder.Append($"\t\t\t{ts.KWFeature} {aut.Name}_{ts.KWFeature} = new {ts.KWFeature}(WebDriverFactory.Driver");
                             stringBuilder.Append($"{aut.Name.Substring(aut.Name.Length - 1)}");
                             stringBuilder.AppendLine(");");
                         }
                         else
                         {
-                            stringBuilder.AppendLine($"\t\t\t{ts.Feature} {aut.Name}_{ts.Feature} = new {ts.Feature}();");
+                            stringBuilder.AppendLine($"\t\t\t{ts.KWFeature} {aut.Name}_{ts.KWFeature} = new {ts.KWFeature}();");
                         }
                     }
 
@@ -483,8 +478,8 @@ namespace ATTM_API.Helpers
                                 {
                                     sBuilderKeywords.Append("\t\t\t");
                                 }
-                                TestAUT aut = await _testauts.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                sBuilderKeywords.Append($"{aut.Name}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Keyword}(");
+                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                sBuilderKeywords.Append($"{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
                                 foreach (TestParam param in tc.TestSteps[i].Params)
                                 {
                                     if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
@@ -537,8 +532,8 @@ namespace ATTM_API.Helpers
                                 {
                                     sBuilderCleanUpKeywords.Append("\t\t\t");
                                 }
-                                TestAUT aut = await _testauts.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {aut.Name}_{tc.TestSteps[i].Feature}.{tc.TestSteps[i].Keyword}(");
+                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword}(");
                                 foreach (TestParam param in tc.TestSteps[i].Params)
                                 {
                                     if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)

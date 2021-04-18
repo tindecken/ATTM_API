@@ -12,7 +12,8 @@ namespace ATTM_API.Models
         public string TestAUTId { get; set; }
         public Keyword Keyword { get; set; }
         public string Name { get; set; }
-        public string Feature { get; set; }
+        public string KWFeature { get; set; }
+        public string KWCategory { get; set; }
         public string Description { get; set; } = string.Empty;
         public List<TestParam> Params { get; set; } = new List<TestParam>();
         public bool IsDisabled { get; set; } = false;
