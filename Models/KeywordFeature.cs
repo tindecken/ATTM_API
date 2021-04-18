@@ -7,7 +7,7 @@ using Newtonsoft.Json;
 namespace ATTM_API.Models
 {
     [BsonIgnoreExtraElements]
-    public class Keyword
+    public class KeywordFeature
     {
         public string Name { get; set; }
         public string Description { get; set; }

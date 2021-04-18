@@ -393,8 +393,8 @@ namespace ATTM_API.Helpers
                     List<TestAUT> lstDistinctAUTs = new List<TestAUT>();
                     foreach (TestStep ts in tc.TestSteps)
                     {
-                        if (string.IsNullOrEmpty(ts.Keyword)) continue;
-                        if (ts.IsDisabled || ts.IsDisabled || ts.Keyword.ToUpper().Equals("CLEANUP")) continue;
+                        if (string.IsNullOrEmpty(ts.Keyword.Name)) continue;
+                        if (ts.IsDisabled || ts.IsDisabled || ts.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
                         bool containsItem = lstDistinctAUTIds.Any(item => item.ToUpper().Equals(ts.TestAUTId.ToUpper()));
                         if (!containsItem) lstDistinctAUTIds.Add(ts.TestAUTId);
                     }
@@ -430,7 +430,7 @@ namespace ATTM_API.Helpers
                     List<TestStep> lstDistinctTestSteps = new List<TestStep>();
                     foreach (TestStep ts in tc.TestSteps)
                     {
-                        if (ts.IsDisabled || ts.IsComment || ts.Keyword.ToUpper().Equals("CLEANUP")) continue;
+                        if (ts.IsDisabled || ts.IsComment || ts.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
                         bool containsItem = lstDistinctTestSteps.Any(item => item.Keyword == ts.Keyword && item.TestAUTId == ts.TestAUTId);
                         if (!containsItem) lstDistinctTestSteps.Add(ts);
                     }
@@ -457,7 +457,7 @@ namespace ATTM_API.Helpers
                     StringBuilder sBuilderKeywords = new StringBuilder();
 
                     //index of CleanUp Keyword
-                    int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Keyword.ToUpper().Equals("CLEANUP"));
+                    int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Keyword.Name.ToUpper().Equals("CLEANUP"));
                     Logger.Info(indexCleanUp == -1
                         ? $"Test case [{tc.Name}] has no CleanUp step"
                         : $"Test case [{tc.Name}] - CleanUp at index: {indexCleanUp}");
@@ -465,7 +465,7 @@ namespace ATTM_API.Helpers
                     if (indexCleanUp == -1) indexCleanUp = int.MaxValue;
                     for (int i = 0; i < tc.TestSteps.Count; i++)
                     {
-                        if (tc.TestSteps[i].Keyword.ToUpper().Equals("CLEANUP")) continue;
+                        if (tc.TestSteps[i].Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
                         // BEFORE CLEANUP
                         if (i < indexCleanUp)
                         {
