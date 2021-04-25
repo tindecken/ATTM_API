@@ -1,0 +1,19 @@
+{
+  "_id": { "$oid": "60855554fb59dfc26887fbf6" },
+  "Name": "Tindecken",
+  "Description": "",
+  "Type": "",
+  "IPAddress": "192.168.1.17",
+  "User": "",
+  "Password": "",
+  "Domain": ""
+}{
+  "_id": { "$oid": "6085555c8f79dd8407d88ef5" },
+  "Name": "HVNLT091",
+  "Description": "",
+  "Type": "",
+  "IPAddress": "192.168.1.4",
+  "User": "",
+  "Password": "",
+  "Domain": ""
+}

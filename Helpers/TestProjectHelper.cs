@@ -300,6 +300,7 @@ namespace ATTM_API.Helpers
                 Logger.Debug($"TestCase: {JsonConvert.SerializeObject(testcase)}");
                 var category = await categories.Find<Category>(cat => cat.Id == testcase.CategoryId).FirstOrDefaultAsync();
                 var testSuite = await testsuites.Find<TestSuite>(ts => ts.Id == testcase.TestSuiteId).FirstOrDefaultAsync();
+                var testGroup = await testgroups.Find<TestGroup>(tg => tg.Id == testcase.TestGroupId).FirstOrDefaultAsync();
                 // Create Category folder if not exist
                 if (!Directory.Exists(Path.Combine(sTestCasesFolder, category.Name)))
                 {
@@ -335,28 +336,29 @@ namespace ATTM_API.Helpers
                 stringBuilder.AppendLine("\t[TestFixture]");
                 stringBuilder.AppendLine($"\tclass {testSuite.Name} : SetupAndTearDown");
                 stringBuilder.AppendLine("\t{");
-                stringBuilder.AppendLine("\t\tstatic int RunId;");
                 stringBuilder.AppendLine("");
-                stringBuilder.AppendLine("\t\t[OneTimeSetUp]");
-                stringBuilder.AppendLine("\t\tpublic void ClassSetup()");
-                stringBuilder.AppendLine("\t\t{");
-                switch (runType.ToUpper())
-                {
-                    case string debug when debug.Contains("DEVELOP"):
-                        stringBuilder.AppendLine("\t\t\tRunId = SQLUtils.LastRunId_Plus_1(\"develop\");");
-                        break;
-                    case string regression when regression.Contains("REGRESSION"):
-                        stringBuilder.AppendLine("\t\t\tRunId = SQLUtils.LastRunId_Plus_1(\"regression\");");
-                        break;
-                }
-                stringBuilder.AppendLine("\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Add(\"RunId\", RunId);");
-                stringBuilder.AppendLine("\t\t}");
-                stringBuilder.AppendLine("");
-                stringBuilder.AppendLine("\t\t[OneTimeTearDown]");
-                stringBuilder.AppendLine("\t\tpublic void ClassTearDown()");
-                stringBuilder.AppendLine("\t\t{");
-                stringBuilder.AppendLine("\t\t}");
-                stringBuilder.AppendLine("");
+                //stringBuilder.AppendLine("\t\tstatic int RunId;");
+                //stringBuilder.AppendLine("");
+                //stringBuilder.AppendLine("\t\t[OneTimeSetUp]");
+                //stringBuilder.AppendLine("\t\tpublic void ClassSetup()");
+                //stringBuilder.AppendLine("\t\t{");
+                //switch (runType.ToUpper())
+                //{
+                //    case string debug when debug.Contains("DEVELOP"):
+                //        stringBuilder.AppendLine("\t\t\tRunId = SQLUtils.LastRunId_Plus_1(\"develop\");");
+                //        break;
+                //    case string regression when regression.Contains("REGRESSION"):
+                //        stringBuilder.AppendLine("\t\t\tRunId = SQLUtils.LastRunId_Plus_1(\"regression\");");
+                //        break;
+                //}
+                //stringBuilder.AppendLine("\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Add(\"RunId\", RunId);");
+                //stringBuilder.AppendLine("\t\t}");
+                //stringBuilder.AppendLine("");
+                //stringBuilder.AppendLine("\t\t[OneTimeTearDown]");
+                //stringBuilder.AppendLine("\t\tpublic void ClassTearDown()");
+                //stringBuilder.AppendLine("\t\t{");
+                //stringBuilder.AppendLine("\t\t}");
+                //stringBuilder.AppendLine("");
                 //TestCase Block
                 int iOrder = 1;
                 foreach (TestCase tc in lstTestCases)
@@ -374,9 +376,9 @@ namespace ATTM_API.Helpers
                     stringBuilder.AppendLine($"\t\t[TestCaseId(\"{tc.CodeName}\")]");
                     stringBuilder.AppendLine($"\t\t[TestCaseName(\"{tc.Name}\")]");
                     stringBuilder.AppendLine($"\t\t[Description(\"{tc.Description}\")]");
-                    stringBuilder.AppendLine($"\t\t[Category(\"{tc.CategoryId}\")]");
-                    stringBuilder.AppendLine($"\t\t[TestSuite(\"{tc.TestSuiteId}\")]");
-                    stringBuilder.AppendLine($"\t\t[TestGroup(\"{tc.TestGroupId}\")]");
+                    stringBuilder.AppendLine($"\t\t[Category(\"{category.Name}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestSuite(\"{testSuite.Name}\")]");
+                    stringBuilder.AppendLine($"\t\t[TestGroup(\"{testGroup.Name}\")]");
                     if (isDebug) stringBuilder.AppendLine($"\t\t[IsDebug(\"true\")]");
                     else stringBuilder.AppendLine($"\t\t[IsDebug(\"false\")]");
                     stringBuilder.AppendLine($"\t\t[RunType(\"{runType}\")]");

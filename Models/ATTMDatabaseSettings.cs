@@ -8,6 +8,7 @@ namespace ATTM_API.Models
         string TestCasesCollectionName { get; set; }
         string TestEnvironmentsCollectionName { get; set; }
         string UsersCollectionName { get; set; }
+        string TestClientsCollectionName { get; set; }
         string KeywordsCollectionName { get; set; }
         string TestAUTsCollectionName { get; set; }
         string ConnectionString { get; set; }
@@ -22,6 +23,7 @@ namespace ATTM_API.Models
         public string TestCasesCollectionName { get; set; }
         public string TestEnvironmentsCollectionName { get; set; }
         public string UsersCollectionName { get; set; }
+        public string TestClientsCollectionName { get; set; }
         public string KeywordsCollectionName { get; set; }
         public string TestAUTsCollectionName { get; set; }
         public string ConnectionString { get; set; }
