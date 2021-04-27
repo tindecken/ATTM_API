@@ -10,6 +10,7 @@ namespace ATTM_API.Controllers
     public class UsersController : ControllerBase
     {
         private UserService _userService;
+        
 
         public UsersController(UserService userService)
         {

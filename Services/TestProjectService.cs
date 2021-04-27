@@ -21,6 +21,8 @@ namespace ATTM_API.Services
         private readonly IMongoCollection<Category> _categories;
         private readonly IMongoCollection<TestSuite> _testsuites;
         private readonly IMongoCollection<TestGroup> _testgroups;
+        private readonly IMongoCollection<DevQueue> _devqueues;
+        private readonly IMongoCollection<TestClient> _testclients;
 
         public TestProjectService(IATTMDatabaseSettings settings)
         {
@@ -30,11 +32,19 @@ namespace ATTM_API.Services
             _categories = database.GetCollection<Category>(settings.CategoriesCollectionName);
             _testsuites = database.GetCollection<TestSuite>(settings.TestSuitesCollectionName);
             _testgroups = database.GetCollection<TestGroup>(settings.TestGroupsCollectionName);
+            _devqueues = database.GetCollection<DevQueue>(settings.DevQueuesCollectionName);
+            _testclients = database.GetCollection<TestClient>(settings.TestClientsCollectionName);
         }
 
         public JObject GenerateCode(List<TestCase> testCases, string runType, bool isDebug = false)
         {
             TestProjectHelper.GenerateCode(testCases, runType, _categories, _testsuites, _testgroups, _testauts);
+            JObject result = new JObject();
+            return result;
+        }
+        public JObject CreateDevQueue(List<TestCase> testCases, TestClient testClient)
+        {
+            TestProjectHelper.CreateDevQueue(testCases, testClient, _devqueues, _categories, _testsuites);
             JObject result = new JObject();
             return result;
         }

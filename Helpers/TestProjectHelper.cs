@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Xml;
 using ATTM_API.Models;
 using MongoDB.Bson;
@@ -12,6 +13,7 @@ using Newtonsoft.Json;
 using Formatting = Newtonsoft.Json.Formatting;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
+using Newtonsoft.Json.Linq;
 
 
 namespace ATTM_API.Helpers
@@ -307,17 +309,6 @@ namespace ATTM_API.Helpers
                     Directory.CreateDirectory(Path.Combine(sTestCasesFolder, category.Name));
                 }
 
-                // Create TestSuite file into Category folder
-                // If TestSuite file is not exist --> create it + add some packages, setup, teardown, testcase part....
-                // If TestSuite is exist --> only insert testcase part
-
-
-                //if (!File.Exists(Path.Combine(sTestCasesFolder, tc.Category, tc.TestSuite + ".cs")))
-                //{
-                //    File.Create(Path.Combine(sTestCasesFolder, tc.Category, tc.TestSuite + ".cs"));
-
-                //}
-
                 string tsCodeFile = Path.Combine(TestProject, "TestCases", category.Name, testSuite.Name + ".cs");
 
                 //File.Create(tsCodeFile);
@@ -337,28 +328,7 @@ namespace ATTM_API.Helpers
                 stringBuilder.AppendLine($"\tclass {testSuite.Name} : SetupAndTearDown");
                 stringBuilder.AppendLine("\t{");
                 stringBuilder.AppendLine("");
-                //stringBuilder.AppendLine("\t\tstatic int RunId;");
-                //stringBuilder.AppendLine("");
-                //stringBuilder.AppendLine("\t\t[OneTimeSetUp]");
-                //stringBuilder.AppendLine("\t\tpublic void ClassSetup()");
-                //stringBuilder.AppendLine("\t\t{");
-                //switch (runType.ToUpper())
-                //{
-                //    case string debug when debug.Contains("DEVELOP"):
-                //        stringBuilder.AppendLine("\t\t\tRunId = SQLUtils.LastRunId_Plus_1(\"develop\");");
-                //        break;
-                //    case string regression when regression.Contains("REGRESSION"):
-                //        stringBuilder.AppendLine("\t\t\tRunId = SQLUtils.LastRunId_Plus_1(\"regression\");");
-                //        break;
-                //}
-                //stringBuilder.AppendLine("\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Add(\"RunId\", RunId);");
-                //stringBuilder.AppendLine("\t\t}");
-                //stringBuilder.AppendLine("");
-                //stringBuilder.AppendLine("\t\t[OneTimeTearDown]");
-                //stringBuilder.AppendLine("\t\tpublic void ClassTearDown()");
-                //stringBuilder.AppendLine("\t\t{");
-                //stringBuilder.AppendLine("\t\t}");
-                //stringBuilder.AppendLine("");
+
                 //TestCase Block
                 int iOrder = 1;
                 foreach (TestCase tc in lstTestCases)
@@ -588,6 +558,30 @@ namespace ATTM_API.Helpers
             }
             #endregion
 
+        }
+
+        public static async Task<JObject> CreateDevQueue(List<TestCase> testCases, TestClient testClient, IMongoCollection<DevQueue> devqueues, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites)
+        {
+            foreach (var tc in testCases)
+            {
+                var category = await categories.Find<Category>(cat => cat.Id == tc.CategoryId).FirstOrDefaultAsync();
+                var testsuite = await testsuites.Find<TestSuite>(ts => ts.Id == tc.TestSuiteId).FirstOrDefaultAsync();
+                DevQueue devQueue = new DevQueue
+                {
+                    TestCaseId = tc.Id,
+                    TestCaseCodeName = tc.CodeName,
+                    TestCaseName = tc.Name,
+                    TestCaseFullName = $"TestProject.TestCases.{category.Name}.{testsuite.CodeName}.{tc.CodeName}",
+                    QueueStatus = "InQueue",
+                    QueueType = string.Empty,
+                    CreateAt = DateTime.UtcNow,
+                    ClientName = testClient.Name,
+                    ClientInstance = testClient.Instance
+                };
+                await devqueues.InsertOneAsync(devQueue);
+            }
+            JObject result = new JObject();
+            return result;
         }
     }
 }
