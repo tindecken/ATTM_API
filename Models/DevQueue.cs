@@ -21,7 +21,7 @@ namespace ATTM_API.Models
         public DateTime CreateAt { get; set; }
         public DateTime RunAt { get; set; }
         public string ClientName { get; set; }
-        public string ClientInstance { get; set; }
+        public bool IsHighPriority { get; set; }
         public string Note { get; set; }
     }
 }

@@ -27,9 +27,8 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost("createdevqueue")]
-        public JObject createDevQueue([FromBody] JObject payload)
+        public Task<JArray> createDevQueue([FromBody] JObject payload)
         {
-            //var testcases = payload.ToObject<List<TestCase>>();
             List<TestCase> lstTestCases = new List<TestCase>();
             TestClient testClient = new TestClient();
             foreach (KeyValuePair<string, JToken> property in payload)
@@ -44,6 +43,12 @@ namespace ATTM_API.Controllers
                 }
             }
             return _testProjectService.CreateDevQueue(lstTestCases, testClient);
+        }
+
+        [HttpPost("buildproject")]
+        public Task<int> buildProject()
+        {
+            return _testProjectService.BuildProject();
         }
     }
 }

@@ -8,13 +8,14 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Xml;
 using ATTM_API.Models;
+using Microsoft.AspNetCore.Mvc;
 using MongoDB.Bson;
 using Newtonsoft.Json;
 using Formatting = Newtonsoft.Json.Formatting;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
-
+using System.Diagnostics;
 
 namespace ATTM_API.Helpers
 {
@@ -22,7 +23,7 @@ namespace ATTM_API.Helpers
     public class TestProjectHelper
     {
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
-
+        private static readonly IConfiguration _config;
         private static string sRootDLL = System.Reflection.Assembly.GetExecutingAssembly().Location;
         public static string sRootPath = Path.GetDirectoryName(sRootDLL);
         private static DirectoryInfo drInfoRoot = new DirectoryInfo(sRootPath);
@@ -34,7 +35,6 @@ namespace ATTM_API.Helpers
         public static string sTestProjectDLL = Path.Combine(sTestProjectFolder, "TestProject", "TestProject.dll");
         public static string sKeywordListFile = Path.Combine(Path.GetTempPath(), "Keyword.json");
 
-        
         public static string sPatternStartSummary = "/// <summary>";
         public static string sPatternEndSummary = "/// </summary>";
         public static string sPatternParam = @"/// <param.*</param>$";
@@ -42,6 +42,35 @@ namespace ATTM_API.Helpers
         public static string sPatternGroupParam = "<param name=\"(?<ParamName>.+)\">(?<ParamDescription>.+)Exp:(?<ParamExampleValue>.+)</param>";
 
         
+
+        public static async Task<int> BuildProject()
+        {
+            int intExitCode;
+            Logger.Info("-- Start Build Project");
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = @"dotnet.exe"; // Specify exe name.
+            startInfo.Arguments = $"build {sTestProjectcsproj}";
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
+            //
+            // Start the process.
+            //
+            using (Process process = Process.Start(startInfo))
+            {
+                //
+                // Read in all the text from the process with the StreamReader.
+                //
+                using (StreamReader reader = process.StandardOutput)
+                {
+                    string result = reader.ReadToEnd();
+                    Logger.Debug(result);
+                }
+                process.WaitForExit();
+                intExitCode = process.ExitCode;
+            }
+            Logger.Info("-- End Build Project");
+            return intExitCode;
+        }
 
         /// <summary>
         /// Get the keyword list from Test\Keywords
@@ -560,10 +589,12 @@ namespace ATTM_API.Helpers
 
         }
 
-        public static async Task<JObject> CreateDevQueue(List<TestCase> testCases, TestClient testClient, IMongoCollection<DevQueue> devqueues, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites)
+        public static async Task<JArray> CreateDevQueue(List<TestCase> testCases, TestClient testClient, IMongoCollection<DevQueue> devqueues, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites)
         {
+            JArray arrResult = new JArray();
             foreach (var tc in testCases)
             {
+                JObject queueObject = new JObject();
                 var category = await categories.Find<Category>(cat => cat.Id == tc.CategoryId).FirstOrDefaultAsync();
                 var testsuite = await testsuites.Find<TestSuite>(ts => ts.Id == tc.TestSuiteId).FirstOrDefaultAsync();
                 DevQueue devQueue = new DevQueue
@@ -576,12 +607,21 @@ namespace ATTM_API.Helpers
                     QueueType = string.Empty,
                     CreateAt = DateTime.UtcNow,
                     ClientName = testClient.Name,
-                    ClientInstance = testClient.Instance
+                    IsHighPriority = false
                 };
-                await devqueues.InsertOneAsync(devQueue);
+                var filters = Builders<DevQueue>.Filter.Eq("TestCaseId", tc.Id)
+                              & Builders<DevQueue>.Filter.Eq("QueueStatus", "InQueue")
+                              & Builders<DevQueue>.Filter.Eq("ClientName", testClient.Name);
+                var found = devqueues.Find(filters).FirstOrDefault();
+                if (found == null)
+                {
+                    await devqueues.InsertOneAsync(devQueue);
+                    queueObject = (JObject)JToken.FromObject(devQueue);
+                    arrResult.Add(queueObject);
+                }
             }
-            JObject result = new JObject();
-            return result;
+            
+            return arrResult;
         }
     }
 }
