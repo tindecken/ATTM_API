@@ -20,10 +20,10 @@ namespace ATTM_API.Controllers
             _testProjectService = testProjectService;
         }
 
-        [HttpPost("generatecode")]
-        public JObject generateCode([FromBody]List<TestCase> testcases)
+        [HttpPost("generatedevcode")]
+        public JObject generateDevCode([FromBody]List<TestCase> testcases)
         {
-            return _testProjectService.GenerateCode(testcases, "Debug");
+            return _testProjectService.GenerateCode(testcases, "Dev");
         }
 
         [HttpPost("createdevqueue")]

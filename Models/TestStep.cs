@@ -11,7 +11,7 @@ namespace ATTM_API.Models
         public string UUID { get; set; }
         public string TestAUTId { get; set; }
         public Keyword Keyword { get; set; }
-        public string Name { get; set; }
+        //public string Name { get; set; }
         public string KWFeature { get; set; }
         public string KWCategory { get; set; }
         public string Description { get; set; } = string.Empty;

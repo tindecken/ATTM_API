@@ -338,7 +338,7 @@ namespace ATTM_API.Helpers
                     Directory.CreateDirectory(Path.Combine(sTestCasesFolder, category.Name));
                 }
 
-                string tsCodeFile = Path.Combine(TestProject, "TestCases", category.Name, testSuite.Name + ".cs");
+                string tsCodeFile = Path.Combine(TestProject, "TestCases", category.Name, testSuite.CodeName + ".cs");
 
                 //File.Create(tsCodeFile);
                 StringBuilder stringBuilder = new StringBuilder();
@@ -354,7 +354,7 @@ namespace ATTM_API.Helpers
                 stringBuilder.AppendLine($@"namespace TestProject.TestCases.{category.Name}");
                 stringBuilder.AppendLine(@"{");
                 stringBuilder.AppendLine("\t[TestFixture]");
-                stringBuilder.AppendLine($"\tclass {testSuite.Name} : SetupAndTearDown");
+                stringBuilder.AppendLine($"\tclass {testSuite.CodeName} : SetupAndTearDown");
                 stringBuilder.AppendLine("\t{");
                 stringBuilder.AppendLine("");
 
@@ -389,6 +389,7 @@ namespace ATTM_API.Helpers
                     List<TestAUT> lstDistinctAUTs = new List<TestAUT>();
                     foreach (TestStep ts in tc.TestSteps)
                     {
+                        if (ts.Keyword == null) continue;
                         if (string.IsNullOrEmpty(ts.Keyword.Name)) continue;
                         if (ts.IsDisabled || ts.IsDisabled || ts.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
                         bool containsItem = lstDistinctAUTIds.Any(item => item.ToUpper().Equals(ts.TestAUTId.ToUpper()));
@@ -424,11 +425,11 @@ namespace ATTM_API.Helpers
 
                     //TestSteps block
                     List<TestStep> lstDistinctTestSteps = new List<TestStep>();
-                    foreach (TestStep ts in tc.TestSteps)
+                    foreach (var testStep in tc.TestSteps)
                     {
-                        if (ts.IsDisabled || ts.IsComment || ts.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
-                        bool containsItem = lstDistinctTestSteps.Any(item => item.Keyword == ts.Keyword && item.TestAUTId == ts.TestAUTId);
-                        if (!containsItem) lstDistinctTestSteps.Add(ts);
+                        if (testStep.IsDisabled || testStep.IsComment || testStep.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
+                        bool containsItem = lstDistinctTestSteps.Any(item => item.Keyword.Name == testStep.Keyword.Name && item.TestAUTId == testStep.TestAUTId);
+                        if (!containsItem) lstDistinctTestSteps.Add(testStep);
                     }
 
                     foreach (TestStep ts in lstDistinctTestSteps)
@@ -457,7 +458,7 @@ namespace ATTM_API.Helpers
                     Logger.Info(indexCleanUp == -1
                         ? $"Test case [{tc.Name}] has no CleanUp step"
                         : $"Test case [{tc.Name}] - CleanUp at index: {indexCleanUp}");
-                    //I do hard code indexCleanUp in case of user doesn't use CleanUp in the test case
+                    //I do hardcoded indexCleanUp in case of user doesn't use CleanUp in the test case
                     if (indexCleanUp == -1) indexCleanUp = int.MaxValue;
                     for (int i = 0; i < tc.TestSteps.Count; i++)
                     {
@@ -534,7 +535,7 @@ namespace ATTM_API.Helpers
                                     sBuilderCleanUpKeywords.Append("\t\t\t");
                                 }
                                 TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword}(");
+                                sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
                                 foreach (TestParam param in tc.TestSteps[i].Params)
                                 {
                                     if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
