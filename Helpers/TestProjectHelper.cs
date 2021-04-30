@@ -327,266 +327,279 @@ namespace ATTM_API.Helpers
 
             var lstSupportBrowser = SupportBrowser.Split(",");
 
-            foreach (var testcase in lstTestCases)
+            List<string> lstDistinctTestSuites = new List<string>();
+
+            foreach (var tcase in lstTestCases)
             {
-                Logger.Debug($"TestCase: {JsonConvert.SerializeObject(testcase)}");
-                var category = await categories.Find<Category>(cat => cat.Id == testcase.CategoryId).FirstOrDefaultAsync();
-                var testSuite = await testsuites.Find<TestSuite>(ts => ts.Id == testcase.TestSuiteId).FirstOrDefaultAsync();
-                var testGroup = await testgroups.Find<TestGroup>(tg => tg.Id == testcase.TestGroupId).FirstOrDefaultAsync();
-                // Create Category folder if not exist
-                if (!Directory.Exists(Path.Combine(sTestCasesFolder, category.Name)))
+                bool containsItem = lstDistinctTestSuites.Any(tsId => tsId.Equals(tcase.TestSuiteId));
+                if (!containsItem) lstDistinctTestSuites.Add(tcase.TestSuiteId);
+            }
+
+            foreach (var tsId in lstDistinctTestSuites)
+            {
+                var testSuite = testsuites.Find<TestSuite>(ts => ts.Id == tsId).FirstOrDefault();
+                foreach (var testcase in lstTestCases)
                 {
-                    Directory.CreateDirectory(Path.Combine(sTestCasesFolder, category.Name));
-                }
-
-                string tsCodeFile = Path.Combine(TestProject, "TestCases", category.Name, testSuite.CodeName + ".cs");
-
-                //File.Create(tsCodeFile);
-                StringBuilder stringBuilder = new StringBuilder();
-                stringBuilder.AppendLine(@"using NUnit.Framework;");
-                stringBuilder.AppendLine(@"using NUnit.Framework.Internal;");
-                stringBuilder.AppendLine(@"using System;");
-                stringBuilder.AppendLine(@"using TestProject.Framework;");
-                stringBuilder.AppendLine(@"using TestProject.Framework.CustomAttributes;");
-                stringBuilder.AppendLine(@"using TestProject.Keywords;");
-                stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
-                stringBuilder.AppendLine(@"using TestProject.Keywords.Saucedemo;");
-                stringBuilder.AppendLine("");
-                stringBuilder.AppendLine($@"namespace TestProject.TestCases.{category.Name}");
-                stringBuilder.AppendLine(@"{");
-                stringBuilder.AppendLine("\t[TestFixture]");
-                stringBuilder.AppendLine($"\tclass {testSuite.CodeName} : SetupAndTearDown");
-                stringBuilder.AppendLine("\t{");
-                stringBuilder.AppendLine("");
-
-                //TestCase Block
-                int iOrder = 1;
-                foreach (TestCase tc in lstTestCases)
-                {
-                    bool isTearDownCommentAdded = false;
-                    if (tc.TestSteps.Count == 0) continue;
-                    if (tc.TimeOutInMinutes == 0)
+                    if (!testcase.TestSuiteId.Equals(tsId)) continue;
+                    Logger.Debug($"TestCase: {JsonConvert.SerializeObject(testcase)}");
+                    var category = categories.Find<Category>(cat => cat.Id == testcase.CategoryId).FirstOrDefault();
+                    var testGroup = testgroups.Find<TestGroup>(tg => tg.Id == testcase.TestGroupId).FirstOrDefault();
+                    // Create Category folder if not exist
+                    if (!Directory.Exists(Path.Combine(sTestCasesFolder, category.Name)))
                     {
-                        stringBuilder.AppendLine($"\t\t[Test, Timeout({int.Parse(MaximumTestCaseTimeOutInMinus) * 60000}), Order({iOrder})]");
-                    }
-                    else
-                    {
-                        stringBuilder.AppendLine($"\t\t[Test, Timeout({tc.TimeOutInMinutes * 60000}), Order({iOrder})]");
-                    }
-                    stringBuilder.AppendLine($"\t\t[TestCaseId(\"{tc.CodeName}\")]");
-                    stringBuilder.AppendLine($"\t\t[TestCaseName(\"{tc.Name}\")]");
-                    stringBuilder.AppendLine($"\t\t[Description(\"{tc.Description}\")]");
-                    stringBuilder.AppendLine($"\t\t[Category(\"{category.Name}\")]");
-                    stringBuilder.AppendLine($"\t\t[TestSuite(\"{testSuite.Name}\")]");
-                    stringBuilder.AppendLine($"\t\t[TestGroup(\"{testGroup.Name}\")]");
-                    if (isDebug) stringBuilder.AppendLine($"\t\t[IsDebug(\"true\")]");
-                    else stringBuilder.AppendLine($"\t\t[IsDebug(\"false\")]");
-                    stringBuilder.AppendLine($"\t\t[RunType(\"{runType}\")]");
-                    stringBuilder.AppendLine($"\t\t[Author(\"{tc.Designer}\")]");
-                    stringBuilder.AppendLine($"\t\t[Team(\"{tc.Team}\")]");
-                    stringBuilder.AppendLine($"\t\t[RunOwner(\"{Environment.MachineName}\")]");
-                    stringBuilder.AppendLine($"\t\t[TestCaseType(\"{tc.TestCaseType}\")]");
-                    List<string> lstDistinctAUTIds = new List<string>();
-                    List<TestAUT> lstDistinctAUTs = new List<TestAUT>();
-                    foreach (TestStep ts in tc.TestSteps)
-                    {
-                        if (ts.Keyword == null) continue;
-                        if (string.IsNullOrEmpty(ts.Keyword.Name)) continue;
-                        if (ts.IsDisabled || ts.IsDisabled || ts.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
-                        bool containsItem = lstDistinctAUTIds.Any(item => item.ToUpper().Equals(ts.TestAUTId.ToUpper()));
-                        if (!containsItem) lstDistinctAUTIds.Add(ts.TestAUTId);
+                        Directory.CreateDirectory(Path.Combine(sTestCasesFolder, category.Name));
                     }
 
-                    foreach (string autId in lstDistinctAUTIds)
-                    {
-                        var testAUT = await testAUTs.Find<TestAUT>(aut => aut.Id == autId).FirstOrDefaultAsync();
-                        lstDistinctAUTs.Add(testAUT);
-                    }
+                    string tsCodeFile = Path.Combine(TestProject, "TestCases", category.Name, testSuite.CodeName + ".cs");
 
-                    foreach (TestAUT aut in lstDistinctAUTs)
-                    {
-                        if (lstSupportBrowser.Contains(aut.Name))
-                        {
-                            stringBuilder.AppendLine($"\t\t[WebDriver(\"{aut.Name}\")]");
-                        }
-                    }
-                    stringBuilder.AppendLine($"\t\t[WorkItem(\"{tc.WorkItem}\")]");
-                    stringBuilder.AppendLine($"\t\t// {tc.Name}");
-                    stringBuilder.AppendLine($"\t\tpublic void {tc.CodeName}()");
-                    stringBuilder.AppendLine("\t\t{");
-
-
-                    foreach (TestAUT aut in lstDistinctAUTs)
-                    {
-                        if (lstSupportBrowser.Contains(aut.Name))
-                        {
-                            stringBuilder.AppendLine($"\t\t\tWebDriverFactory.InitBrowser(\"{aut.Name}\");");
-                        }
-                    }
-
-                    //TestSteps block
-                    List<TestStep> lstDistinctTestSteps = new List<TestStep>();
-                    foreach (var testStep in tc.TestSteps)
-                    {
-                        if (testStep.IsDisabled || testStep.IsComment || testStep.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
-                        bool containsItem = lstDistinctTestSteps.Any(item => item.Keyword.Name == testStep.Keyword.Name && item.TestAUTId == testStep.TestAUTId);
-                        if (!containsItem) lstDistinctTestSteps.Add(testStep);
-                    }
-
-                    foreach (TestStep ts in lstDistinctTestSteps)
-                    {
-                        TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == ts.TestAUTId).FirstOrDefaultAsync();
-                        if (lstSupportBrowser.Contains(aut.Name))
-                        {
-                            stringBuilder.Append($"\t\t\t{ts.KWFeature} {aut.Name}_{ts.KWFeature} = new {ts.KWFeature}(WebDriverFactory.Driver");
-                            stringBuilder.Append($"{aut.Name.Substring(aut.Name.Length - 1)}");
-                            stringBuilder.AppendLine(");");
-                        }
-                        else
-                        {
-                            stringBuilder.AppendLine($"\t\t\t{ts.KWFeature} {aut.Name}_{ts.KWFeature} = new {ts.KWFeature}();");
-                        }
-                    }
-
-                    stringBuilder.AppendLine("\t\t\t// ------------------------------------------------------");
-                    stringBuilder.AppendLine();
-
-                    StringBuilder sBuilderCleanUpKeywords = new StringBuilder();
-                    StringBuilder sBuilderKeywords = new StringBuilder();
-
-                    //index of CleanUp Keyword
-                    int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Keyword.Name.ToUpper().Equals("CLEANUP"));
-                    Logger.Info(indexCleanUp == -1
-                        ? $"Test case [{tc.Name}] has no CleanUp step"
-                        : $"Test case [{tc.Name}] - CleanUp at index: {indexCleanUp}");
-                    //I do hardcoded indexCleanUp in case of user doesn't use CleanUp in the test case
-                    if (indexCleanUp == -1) indexCleanUp = int.MaxValue;
-                    for (int i = 0; i < tc.TestSteps.Count; i++)
-                    {
-                        if (tc.TestSteps[i].Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
-                        // BEFORE CLEANUP
-                        if (i < indexCleanUp)
-                        {
-                            if (tc.TestSteps[i].IsComment)
-                            {
-                                sBuilderKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
-                            }
-                            else
-                            {
-                                if (tc.TestSteps[i].IsDisabled)
-                                {
-                                    sBuilderKeywords.Append("\t\t\t// ");
-                                }
-                                else
-                                {
-                                    sBuilderKeywords.Append("\t\t\t");
-                                }
-                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                sBuilderKeywords.Append($"{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
-                                foreach (TestParam param in tc.TestSteps[i].Params)
-                                {
-                                    if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
-                                    {
-                                        if (string.IsNullOrEmpty(param.Value))
-                                        {
-                                            sBuilderKeywords.Append($"null");
-                                        }
-                                        else
-                                        {
-                                            sBuilderKeywords.Append($"\"{param.Value}\"");
-                                        }
-                                    }
-                                    else
-                                    {
-                                        if (string.IsNullOrEmpty(param.Value))
-                                        {
-                                            sBuilderKeywords.Append($"null, ");
-                                        }
-                                        else
-                                        {
-                                            sBuilderKeywords.Append($"\"{param.Value}\", ");
-                                        }
-
-                                    }
-                                }
-                                sBuilderKeywords.AppendLine(");");
-                            }
-                        }
-                        //AFTER CLEANUP
-                        else
-                        {
-                            if (!isTearDownCommentAdded)
-                            {
-                                sBuilderCleanUpKeywords.AppendLine("\t\t\t// Teardown");
-                                isTearDownCommentAdded = true;
-                            }
-
-                            if (tc.TestSteps[i].IsComment)
-                            {
-                                sBuilderCleanUpKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
-                            }
-                            else
-                            {
-                                if (tc.TestSteps[i].IsDisabled)
-                                {
-                                    sBuilderCleanUpKeywords.Append("\t\t\t// ");
-                                }
-                                else
-                                {
-                                    sBuilderCleanUpKeywords.Append("\t\t\t");
-                                }
-                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
-                                foreach (TestParam param in tc.TestSteps[i].Params)
-                                {
-                                    if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
-                                    {
-                                        if (string.IsNullOrEmpty(param.Value))
-                                        {
-                                            sBuilderCleanUpKeywords.Append($"null");
-                                        }
-                                        else
-                                        {
-                                            sBuilderCleanUpKeywords.Append($"\"{param.Value}\"");
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        if (string.IsNullOrEmpty(param.Value))
-                                        {
-                                            sBuilderCleanUpKeywords.Append($"null, ");
-                                        }
-                                        else
-                                        {
-                                            sBuilderCleanUpKeywords.Append($"\"{param.Value}\", ");
-                                        }
-
-                                    }
-                                }
-                                sBuilderCleanUpKeywords.AppendLine("));");
-                            }
-                        }
-                    }
-
-                    stringBuilder.Append(sBuilderCleanUpKeywords);
-                    stringBuilder.AppendLine("\t\t\t// ------------------------------------------------------");
-                    stringBuilder.AppendLine();
-
-                    stringBuilder.Append(sBuilderKeywords);
-                    stringBuilder.AppendLine("\t\t}");
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine(@"using NUnit.Framework;");
+                    stringBuilder.AppendLine(@"using NUnit.Framework.Internal;");
+                    stringBuilder.AppendLine(@"using System;");
+                    stringBuilder.AppendLine(@"using TestProject.Framework;");
+                    stringBuilder.AppendLine(@"using TestProject.Framework.CustomAttributes;");
+                    stringBuilder.AppendLine(@"using TestProject.Keywords;");
+                    stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
+                    stringBuilder.AppendLine(@"using TestProject.Keywords.Saucedemo;");
+                    stringBuilder.AppendLine("");
+                    stringBuilder.AppendLine($@"namespace TestProject.TestCases.{category.Name}");
+                    stringBuilder.AppendLine(@"{");
+                    stringBuilder.AppendLine("\t[TestFixture]");
+                    stringBuilder.AppendLine($"\tclass {testSuite.CodeName} : SetupAndTearDown");
+                    stringBuilder.AppendLine("\t{");
                     stringBuilder.AppendLine("");
 
-                    iOrder++;
-                }
-                stringBuilder.AppendLine("\t}");
-                stringBuilder.AppendLine("}");
+                    //TestCase Block
+                    int iOrder = 1;
+                    foreach (TestCase tc in lstTestCases)
+                    {
+                        if (!tc.TestSuiteId.Equals(tsId)) continue;
+                        bool isTearDownCommentAdded = false;
+                        if (tc.TestSteps.Count == 0) continue;
+                        if (tc.TimeOutInMinutes == 0)
+                        {
+                            stringBuilder.AppendLine($"\t\t[Test, Timeout({int.Parse(MaximumTestCaseTimeOutInMinus) * 60000}), Order({iOrder})]");
+                        }
+                        else
+                        {
+                            stringBuilder.AppendLine($"\t\t[Test, Timeout({tc.TimeOutInMinutes * 60000}), Order({iOrder})]");
+                        }
+                        stringBuilder.AppendLine($"\t\t[TestCaseId(\"{tc.CodeName}\")]");
+                        stringBuilder.AppendLine($"\t\t[TestCaseName(\"{tc.Name}\")]");
+                        stringBuilder.AppendLine($"\t\t[Description(\"{tc.Description}\")]");
+                        stringBuilder.AppendLine($"\t\t[Category(\"{category.Name}\")]");
+                        stringBuilder.AppendLine($"\t\t[TestSuite(\"{testSuite.Name}\")]");
+                        stringBuilder.AppendLine($"\t\t[TestGroup(\"{testGroup.Name}\")]");
+                        if (isDebug) stringBuilder.AppendLine($"\t\t[IsDebug(\"true\")]");
+                        else stringBuilder.AppendLine($"\t\t[IsDebug(\"false\")]");
+                        stringBuilder.AppendLine($"\t\t[RunType(\"{runType}\")]");
+                        stringBuilder.AppendLine($"\t\t[Author(\"{tc.Designer}\")]");
+                        stringBuilder.AppendLine($"\t\t[Team(\"{tc.Team}\")]");
+                        stringBuilder.AppendLine($"\t\t[RunOwner(\"{Environment.MachineName}\")]");
+                        stringBuilder.AppendLine($"\t\t[TestCaseType(\"{tc.TestCaseType}\")]");
+                        List<string> lstDistinctAUTIds = new List<string>();
+                        List<TestAUT> lstDistinctAUTs = new List<TestAUT>();
+                        foreach (TestStep ts in tc.TestSteps)
+                        {
+                            if (ts.Keyword == null) continue;
+                            if (string.IsNullOrEmpty(ts.Keyword.Name)) continue;
+                            if (ts.IsDisabled || ts.IsDisabled || ts.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
+                            bool containsItem = lstDistinctAUTIds.Any(item => item.ToUpper().Equals(ts.TestAUTId.ToUpper()));
+                            if (!containsItem) lstDistinctAUTIds.Add(ts.TestAUTId);
+                        }
 
-                using (StreamWriter file = new StreamWriter(tsCodeFile))
-                {
-                    file.WriteLine(stringBuilder.ToString());
+                        foreach (string autId in lstDistinctAUTIds)
+                        {
+                            var testAUT = await testAUTs.Find<TestAUT>(aut => aut.Id == autId).FirstOrDefaultAsync();
+                            lstDistinctAUTs.Add(testAUT);
+                        }
+
+                        foreach (TestAUT aut in lstDistinctAUTs)
+                        {
+                            if (lstSupportBrowser.Contains(aut.Name))
+                            {
+                                stringBuilder.AppendLine($"\t\t[WebDriver(\"{aut.Name}\")]");
+                            }
+                        }
+                        stringBuilder.AppendLine($"\t\t[WorkItem(\"{tc.WorkItem}\")]");
+                        stringBuilder.AppendLine($"\t\t// {tc.Name}");
+                        stringBuilder.AppendLine($"\t\tpublic void {tc.CodeName}()");
+                        stringBuilder.AppendLine("\t\t{");
+
+
+                        foreach (TestAUT aut in lstDistinctAUTs)
+                        {
+                            if (lstSupportBrowser.Contains(aut.Name))
+                            {
+                                stringBuilder.AppendLine($"\t\t\tWebDriverFactory.InitBrowser(\"{aut.Name}\");");
+                            }
+                        }
+
+                        //TestSteps block
+                        List<TestStep> lstDistinctTestSteps = new List<TestStep>();
+                        foreach (var testStep in tc.TestSteps)
+                        {
+                            if (testStep.IsDisabled || testStep.IsComment || testStep.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
+                            bool containsItem = lstDistinctTestSteps.Any(item => item.Keyword.Name == testStep.Keyword.Name && item.TestAUTId == testStep.TestAUTId);
+                            if (!containsItem) lstDistinctTestSteps.Add(testStep);
+                        }
+
+                        foreach (TestStep ts in lstDistinctTestSteps)
+                        {
+                            TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == ts.TestAUTId).FirstOrDefaultAsync();
+                            if (lstSupportBrowser.Contains(aut.Name))
+                            {
+                                stringBuilder.Append($"\t\t\t{ts.KWFeature} {aut.Name}_{ts.KWFeature} = new {ts.KWFeature}(WebDriverFactory.Driver");
+                                stringBuilder.Append($"{aut.Name.Substring(aut.Name.Length - 1)}");
+                                stringBuilder.AppendLine(");");
+                            }
+                            else
+                            {
+                                stringBuilder.AppendLine($"\t\t\t{ts.KWFeature} {aut.Name}_{ts.KWFeature} = new {ts.KWFeature}();");
+                            }
+                        }
+
+                        stringBuilder.AppendLine("\t\t\t// ------------------------------------------------------");
+                        stringBuilder.AppendLine();
+
+                        StringBuilder sBuilderCleanUpKeywords = new StringBuilder();
+                        StringBuilder sBuilderKeywords = new StringBuilder();
+
+                        //index of CleanUp Keyword
+                        int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Keyword.Name.ToUpper().Equals("CLEANUP"));
+                        Logger.Info(indexCleanUp == -1
+                            ? $"Test case [{tc.Name}] has no CleanUp step"
+                            : $"Test case [{tc.Name}] - CleanUp at index: {indexCleanUp}");
+                        //I do hardcoded indexCleanUp in case of user doesn't use CleanUp in the test case
+                        if (indexCleanUp == -1) indexCleanUp = int.MaxValue;
+                        for (int i = 0; i < tc.TestSteps.Count; i++)
+                        {
+                            if (tc.TestSteps[i].Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
+                            // BEFORE CLEANUP
+                            if (i < indexCleanUp)
+                            {
+                                if (tc.TestSteps[i].IsComment)
+                                {
+                                    sBuilderKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
+                                }
+                                else
+                                {
+                                    if (tc.TestSteps[i].IsDisabled)
+                                    {
+                                        sBuilderKeywords.Append("\t\t\t// ");
+                                    }
+                                    else
+                                    {
+                                        sBuilderKeywords.Append("\t\t\t");
+                                    }
+                                    TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                    sBuilderKeywords.Append($"{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+                                    foreach (TestParam param in tc.TestSteps[i].Params)
+                                    {
+                                        if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                        {
+                                            if (string.IsNullOrEmpty(param.Value))
+                                            {
+                                                sBuilderKeywords.Append($"null");
+                                            }
+                                            else
+                                            {
+                                                sBuilderKeywords.Append($"\"{param.Value}\"");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (string.IsNullOrEmpty(param.Value))
+                                            {
+                                                sBuilderKeywords.Append($"null, ");
+                                            }
+                                            else
+                                            {
+                                                sBuilderKeywords.Append($"\"{param.Value}\", ");
+                                            }
+
+                                        }
+                                    }
+                                    sBuilderKeywords.AppendLine(");");
+                                }
+                            }
+                            //AFTER CLEANUP
+                            else
+                            {
+                                if (!isTearDownCommentAdded)
+                                {
+                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t// Teardown");
+                                    isTearDownCommentAdded = true;
+                                }
+
+                                if (tc.TestSteps[i].IsComment)
+                                {
+                                    sBuilderCleanUpKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
+                                }
+                                else
+                                {
+                                    if (tc.TestSteps[i].IsDisabled)
+                                    {
+                                        sBuilderCleanUpKeywords.Append("\t\t\t// ");
+                                    }
+                                    else
+                                    {
+                                        sBuilderCleanUpKeywords.Append("\t\t\t");
+                                    }
+                                    TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                    sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+                                    foreach (TestParam param in tc.TestSteps[i].Params)
+                                    {
+                                        if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                        {
+                                            if (string.IsNullOrEmpty(param.Value))
+                                            {
+                                                sBuilderCleanUpKeywords.Append($"null");
+                                            }
+                                            else
+                                            {
+                                                sBuilderCleanUpKeywords.Append($"\"{param.Value}\"");
+                                            }
+
+                                        }
+                                        else
+                                        {
+                                            if (string.IsNullOrEmpty(param.Value))
+                                            {
+                                                sBuilderCleanUpKeywords.Append($"null, ");
+                                            }
+                                            else
+                                            {
+                                                sBuilderCleanUpKeywords.Append($"\"{param.Value}\", ");
+                                            }
+                                        }
+                                    }
+                                    sBuilderCleanUpKeywords.AppendLine("));");
+                                }
+                            }
+                        }
+
+                        stringBuilder.Append(sBuilderCleanUpKeywords);
+                        stringBuilder.AppendLine("\t\t\t// ------------------------------------------------------");
+                        stringBuilder.AppendLine();
+
+                        stringBuilder.Append(sBuilderKeywords);
+                        stringBuilder.AppendLine("\t\t}");
+                        stringBuilder.AppendLine("");
+
+                        iOrder++;
+                    }
+                    stringBuilder.AppendLine("\t}");
+                    stringBuilder.AppendLine("}");
+
+                    using (StreamWriter file = new StreamWriter(tsCodeFile))
+                    {
+                        file.WriteLine(stringBuilder.ToString());
+                    }
                 }
             }
+
+            
             #endregion
 
             return result;
