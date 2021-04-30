@@ -21,7 +21,7 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost("generatedevcode")]
-        public JObject generateDevCode([FromBody]List<TestCase> testcases)
+        public Task<JObject> generateDevCode([FromBody]List<TestCase> testcases)
         {
             return _testProjectService.GenerateCode(testcases, "Dev");
         }

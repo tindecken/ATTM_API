@@ -39,11 +39,9 @@ namespace ATTM_API.Services
             _testclients = database.GetCollection<TestClient>(settings.TestClientsCollectionName);
         }
 
-        public JObject GenerateCode(List<TestCase> testCases, string runType, bool isDebug = false)
+        public Task<JObject> GenerateCode(List<TestCase> testCases, string runType, bool isDebug = false)
         {
-            TestProjectHelper.GenerateCode(testCases, runType, _categories, _testsuites, _testgroups, _testauts);
-            JObject result = new JObject();
-            return result;
+            return TestProjectHelper.GenerateCode(testCases, runType, _categories, _testsuites, _testgroups, _testauts);
         }
         public Task<JArray> CreateDevQueue(List<TestCase> testCases, TestClient testClient)
         {

@@ -273,8 +273,9 @@ namespace ATTM_API.Helpers
             }
         }
 
-        public static async void GenerateCode(List<TestCase> lstTestCases, string runType, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestAUT> testAUTs, bool isDebug = false)
+        public static async Task<JObject> GenerateCode(List<TestCase> lstTestCases, string runType, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestAUT> testAUTs, bool isDebug = false)
         {
+            JObject result = new JObject();
             var TestProject = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["TestProject"];
             var DefaultTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["DefaultTestCaseTimeOutInMinus"];
             var MaximumTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["MaximumTestCaseTimeOutInMinus"];
@@ -588,6 +589,7 @@ namespace ATTM_API.Helpers
             }
             #endregion
 
+            return result;
         }
 
         public static async Task<JArray> CreateDevQueue(List<TestCase> testCases, TestClient testClient, IMongoCollection<DevQueue> devqueues, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites)
