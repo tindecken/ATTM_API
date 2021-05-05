@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
+using Microsoft.Extensions.Primitives;
 
 namespace ATTM_API.Helpers
 {
@@ -276,6 +277,7 @@ namespace ATTM_API.Helpers
         public static async Task<JObject> GenerateCode(List<TestCase> lstTestCases, string runType, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestAUT> testAUTs, bool isDebug = false)
         {
             JObject result = new JObject();
+            JArray arrResult = new JArray();
             var TestProject = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["TestProject"];
             var DefaultTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["DefaultTestCaseTimeOutInMinus"];
             var MaximumTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["MaximumTestCaseTimeOutInMinus"];
@@ -440,7 +442,7 @@ namespace ATTM_API.Helpers
                         foreach (var testStep in tc.TestSteps)
                         {
                             if (testStep.IsDisabled || testStep.IsComment || testStep.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
-                            bool containsItem = lstDistinctTestSteps.Any(item => item.Keyword.Name == testStep.Keyword.Name && item.TestAUTId == testStep.TestAUTId);
+                            bool containsItem = lstDistinctTestSteps.Any(item => item.KWFeature == testStep.KWFeature && item.TestAUTId == testStep.TestAUTId);
                             if (!containsItem) lstDistinctTestSteps.Add(testStep);
                         }
 
@@ -596,13 +598,15 @@ namespace ATTM_API.Helpers
                     {
                         file.WriteLine(stringBuilder.ToString());
                     }
+                     
+                    JValue jStringBuilder = new JValue($"Generated code for testcase: {testcase.CodeName} - {testcase.Name} in {tsCodeFile}");
+                    arrResult.Add(jStringBuilder);
                 }
             }
 
-            
-            #endregion
-
+            result["result"] = arrResult;
             return result;
+            #endregion
         }
 
         public static async Task<JArray> CreateDevQueue(List<TestCase> testCases, TestClient testClient, IMongoCollection<DevQueue> devqueues, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites)
