@@ -16,6 +16,7 @@ using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
+using System.Diagnostics.Eventing.Reader;
 using Microsoft.Extensions.Primitives;
 
 namespace ATTM_API.Helpers
@@ -44,34 +45,7 @@ namespace ATTM_API.Helpers
 
         
 
-        public static async Task<int> BuildProject()
-        {
-            int intExitCode;
-            Logger.Info("-- Start Build Project");
-            ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = @"dotnet.exe"; // Specify exe name.
-            startInfo.Arguments = $"build {sTestProjectcsproj}";
-            startInfo.UseShellExecute = false;
-            startInfo.RedirectStandardOutput = true;
-            //
-            // Start the process.
-            //
-            using (Process process = Process.Start(startInfo))
-            {
-                //
-                // Read in all the text from the process with the StreamReader.
-                //
-                using (StreamReader reader = process.StandardOutput)
-                {
-                    string result = reader.ReadToEnd();
-                    Logger.Debug(result);
-                }
-                process.WaitForExit();
-                intExitCode = process.ExitCode;
-            }
-            Logger.Info("-- End Build Project");
-            return intExitCode;
-        }
+        
 
         /// <summary>
         /// Get the keyword list from Test\Keywords
@@ -274,7 +248,7 @@ namespace ATTM_API.Helpers
             }
         }
 
-        public static async Task<JObject> GenerateCode(List<TestCase> lstTestCases, string runType, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestAUT> testAUTs, bool isDebug = false)
+        public static async Task<JObject> GenerateCode(List<TestCase> lstTestCases, string runType, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestAUT> testAUTs)
         {
             JObject result = new JObject();
             JArray arrResult = new JArray();
@@ -392,8 +366,6 @@ namespace ATTM_API.Helpers
                         stringBuilder.AppendLine($"\t\t[Category(\"{category.Name}\")]");
                         stringBuilder.AppendLine($"\t\t[TestSuite(\"{testSuite.Name}\")]");
                         stringBuilder.AppendLine($"\t\t[TestGroup(\"{testGroup.Name}\")]");
-                        if (isDebug) stringBuilder.AppendLine($"\t\t[IsDebug(\"true\")]");
-                        else stringBuilder.AppendLine($"\t\t[IsDebug(\"false\")]");
                         stringBuilder.AppendLine($"\t\t[RunType(\"{runType}\")]");
                         stringBuilder.AppendLine($"\t\t[Author(\"{tc.Designer}\")]");
                         stringBuilder.AppendLine($"\t\t[Team(\"{tc.Team}\")]");
@@ -598,19 +570,28 @@ namespace ATTM_API.Helpers
                     {
                         file.WriteLine(stringBuilder.ToString());
                     }
-                     
-                    JValue jStringBuilder = new JValue($"Generated code for testcase: {testcase.CodeName} - {testcase.Name} in {tsCodeFile}");
-                    arrResult.Add(jStringBuilder);
+
+                    JObject jObjectTestCase = new JObject();
+                    jObjectTestCase.Add("testCase", testcase.CodeName);
+                    jObjectTestCase.Add("category", category.Name);
+                    jObjectTestCase.Add("testGroup", testGroup.CodeName);
+                    jObjectTestCase.Add("testSuite", testSuite.CodeName);
+                    jObjectTestCase.Add("testSuiteFile", tsCodeFile);
+                    jObjectTestCase.Add("generatedCode", stringBuilder.ToString());
+                    arrResult.Add(jObjectTestCase);
                 }
             }
+            result.Add("result", "success");
+            result.Add("count", arrResult.Count);
+            result.Add("message", arrResult);
 
-            result["result"] = arrResult;
             return result;
             #endregion
         }
 
-        public static async Task<JArray> CreateDevQueue(List<TestCase> testCases, TestClient testClient, IMongoCollection<DevQueue> devqueues, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites)
+        public static async Task<JObject> CreateDevQueue(List<TestCase> testCases, TestClient testClient, IMongoCollection<DevQueue> devqueues, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites)
         {
+            JObject result = new JObject();
             JArray arrResult = new JArray();
             foreach (var tc in testCases)
             {
@@ -640,8 +621,46 @@ namespace ATTM_API.Helpers
                     arrResult.Add(queueObject);
                 }
             }
-            
-            return arrResult;
+
+            result.Add("result", "success");
+            result.Add("count", arrResult.Count);
+            result.Add("message", arrResult);
+
+            return result;
+        }
+
+        public static async Task<JObject> BuildProject()
+        {
+            JObject result = new JObject();
+            int intExitCode;
+            Logger.Info("-- Start Build Project");
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = @"dotnet.exe"; // Specify exe name.
+            startInfo.Arguments = $"build {sTestProjectcsproj}";
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
+            //
+            // Start the process.
+            //
+            using (Process process = Process.Start(startInfo))
+            {
+                //
+                // Read in all the text from the process with the StreamReader.
+                //
+                using (StreamReader reader = process.StandardOutput)
+                {
+                    string line = reader.ReadToEnd();
+                    result.Add("buildMessage", line);
+                    Logger.Debug(line);
+                }
+                process.WaitForExit();
+                intExitCode = process.ExitCode;
+            }
+            Logger.Info("-- End Build Project");
+            result.Add("result", intExitCode != 0 ? "error" : "success");
+
+            return result;
         }
     }
+
 }

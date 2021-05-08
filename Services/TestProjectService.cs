@@ -39,16 +39,16 @@ namespace ATTM_API.Services
             _testclients = database.GetCollection<TestClient>(settings.TestClientsCollectionName);
         }
 
-        public Task<JObject> GenerateCode(List<TestCase> testCases, string runType, bool isDebug = false)
+        public Task<JObject> GenerateCode(List<TestCase> testCases, string runType)
         {
             return TestProjectHelper.GenerateCode(testCases, runType, _categories, _testsuites, _testgroups, _testauts);
         }
-        public Task<JArray> CreateDevQueue(List<TestCase> testCases, TestClient testClient)
+        public async Task<JObject> CreateDevQueue(List<TestCase> testCases, TestClient testClient)
         {
-            return TestProjectHelper.CreateDevQueue(testCases, testClient, _devqueues, _categories, _testsuites);
+            return await TestProjectHelper.CreateDevQueue(testCases, testClient, _devqueues, _categories, _testsuites);
         }
 
-        public Task<int> BuildProject()
+        public Task<JObject> BuildProject()
         {
             return TestProjectHelper.BuildProject();
             

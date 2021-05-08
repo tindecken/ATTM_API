@@ -21,13 +21,23 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost("generatedevcode")]
-        public Task<JObject> generateDevCode([FromBody]List<TestCase> testcases)
+        public async Task<ActionResult<JObject>> generateDevCode([FromBody]List<TestCase> testcases)
         {
-            return _testProjectService.GenerateCode(testcases, "Dev");
+            var response = await _testProjectService.GenerateCode(testcases, "Dev");
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
         }
 
         [HttpPost("createdevqueue")]
-        public Task<JArray> createDevQueue([FromBody] JObject payload)
+        public async Task<ActionResult<JObject>> createDevQueue([FromBody] JObject payload)
         {
             List<TestCase> lstTestCases = new List<TestCase>();
             TestClient testClient = new TestClient();
@@ -42,13 +52,33 @@ namespace ATTM_API.Controllers
                     testClient = property.Value.ToObject<TestClient>();
                 }
             }
-            return _testProjectService.CreateDevQueue(lstTestCases, testClient);
+            var response = await _testProjectService.CreateDevQueue(lstTestCases, testClient);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
         }
 
         [HttpPost("buildproject")]
-        public Task<int> buildProject()
+        public async Task<ActionResult<JObject>> buildProject()
         {
-            return _testProjectService.BuildProject();
+            var response = await _testProjectService.BuildProject();
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
         }
     }
 }
