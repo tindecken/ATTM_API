@@ -51,6 +51,9 @@ namespace ATTM_API
             services.AddSingleton<TestClientService>();
             services.AddSingleton<DevQueueService>();
             services.AddSingleton<DevRunRecordService>();
+            services.AddSingleton<RegressionService>();
+            services.AddSingleton<RegressionTestService>();
+            services.AddSingleton<RegressionRunRecordService>();
             services.AddControllers()
                 .AddNewtonsoftJson(options => options.UseMemberCasing());
             services.AddControllers();

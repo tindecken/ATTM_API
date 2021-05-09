@@ -36,6 +36,7 @@ namespace ATTM_API.Services
             _testsuites = database.GetCollection<TestSuite>(settings.TestSuitesCollectionName);
             _testgroups = database.GetCollection<TestGroup>(settings.TestGroupsCollectionName);
             _testclients = database.GetCollection<TestClient>(settings.TestClientsCollectionName);
+            _devqueues = database.GetCollection<DevQueue>(settings.DevQueuesCollectionName);
         }
 
         public Task<JObject> GenerateCode(List<TestCase> testCases, string runType)

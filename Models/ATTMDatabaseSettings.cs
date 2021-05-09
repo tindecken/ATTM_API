@@ -2,6 +2,8 @@ namespace ATTM_API.Models
 {
     public interface IATTMDatabaseSettings
     {
+        string ConnectionString { get; set; }
+        string DatabaseName { get; set; }
         string CategoriesCollectionName { get; set; }
         string TestSuitesCollectionName { get; set; }
         string TestGroupsCollectionName { get; set; }
@@ -13,11 +15,15 @@ namespace ATTM_API.Models
         string TestAUTsCollectionName { get; set; }
         string DevQueuesCollectionName { get; set; }
         string DevRunRecordsCollectionName { get; set; }
-        string ConnectionString { get; set; }
-        string DatabaseName { get; set; }
+        string RegressionsCollectionName { get; set; }
+        string RegressionTestsCollectionName { get; set; }
+        string RegressionRunRecordsCollectionName { get; set; }
+        
     }
     public class ATTMDatabaseSettings : IATTMDatabaseSettings
     {
+        public string ConnectionString { get; set; }
+        public string DatabaseName { get; set; }
         public string CategoriesCollectionName { get; set; }
 
         public string TestSuitesCollectionName { get; set; }
@@ -30,7 +36,9 @@ namespace ATTM_API.Models
         public string TestAUTsCollectionName { get; set; }
         public string DevQueuesCollectionName { get; set; }
         public string DevRunRecordsCollectionName { get; set; }
-        public string ConnectionString { get; set; }
-        public string DatabaseName { get; set; }
+        public string RegressionsCollectionName { get; set; }
+        public string RegressionTestsCollectionName { get; set; }
+        public string RegressionRunRecordsCollectionName { get; set; }
+        
     }
 }
