@@ -23,8 +23,9 @@ namespace ATTM_API.Models
         public bool IsDisabled { get; set; } = false;
         public bool IsDeleted { get; set; } = false;
         public string WorkItem { get; set; } = string.Empty;
-        public string Designer { get; set; }
+        public string Owner { get; set; }
         public string Team { get; set; }
+        public int QueueId { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime LastModifiedDate { get; set; } = DateTime.UtcNow;
         

@@ -367,7 +367,7 @@ namespace ATTM_API.Helpers
                         stringBuilder.AppendLine($"\t\t[TestSuite(\"{testSuite.Name}\")]");
                         stringBuilder.AppendLine($"\t\t[TestGroup(\"{testGroup.Name}\")]");
                         stringBuilder.AppendLine($"\t\t[RunType(\"{runType}\")]");
-                        stringBuilder.AppendLine($"\t\t[Author(\"{tc.Designer}\")]");
+                        stringBuilder.AppendLine($"\t\t[Author(\"{tc.Owner}\")]");
                         stringBuilder.AppendLine($"\t\t[Team(\"{tc.Team}\")]");
                         stringBuilder.AppendLine($"\t\t[RunOwner(\"{Environment.MachineName}\")]");
                         stringBuilder.AppendLine($"\t\t[TestCaseType(\"{tc.TestCaseType}\")]");
@@ -635,7 +635,7 @@ namespace ATTM_API.Helpers
             int intExitCode;
             Logger.Info("-- Start Build Project");
             ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = @"dotnet.exe"; // Specify exe name.
+            startInfo.FileName = @"dotnet.exe";
             startInfo.Arguments = $"build {sTestProjectcsproj}";
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;

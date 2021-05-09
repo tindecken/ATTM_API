@@ -80,12 +80,12 @@ namespace ATTM_API.Services
                                 Logger.Debug($"Owner: {owner}");
                                 testObject["Owner"] = owner;
                             }
-                            else if (attInfo.GetType().ToString().Contains("DesignerAttribute"))
+                            else if (attInfo.GetType().ToString().Contains("OwnerAttribute"))
                             {
                                 PropertyInfo pi = attInfo.GetType().GetProperty("Name");
-                                String designer = (String)(pi.GetValue(attInfo, null));
-                                Logger.Debug($"Designer: {designer}");
-                                testObject["Designer"] = designer;
+                                string owner = (String)(pi.GetValue(attInfo, null));
+                                Logger.Debug($"Owner: {owner}");
+                                testObject["Owner"] = owner;
                             }
                             else if (attInfo.GetType().ToString().Contains("PLevelAttribute"))
                             {
