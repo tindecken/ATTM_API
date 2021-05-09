@@ -35,7 +35,6 @@ namespace ATTM_API.Services
             _categories = database.GetCollection<Category>(settings.CategoriesCollectionName);
             _testsuites = database.GetCollection<TestSuite>(settings.TestSuitesCollectionName);
             _testgroups = database.GetCollection<TestGroup>(settings.TestGroupsCollectionName);
-            _devqueues = database.GetCollection<DevQueue>(settings.DevQueuesCollectionName);
             _testclients = database.GetCollection<TestClient>(settings.TestClientsCollectionName);
         }
 

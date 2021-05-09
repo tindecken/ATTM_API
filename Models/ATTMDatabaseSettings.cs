@@ -12,6 +12,7 @@ namespace ATTM_API.Models
         string KeywordsCollectionName { get; set; }
         string TestAUTsCollectionName { get; set; }
         string DevQueuesCollectionName { get; set; }
+        string DevRunRecordsCollectionName { get; set; }
         string ConnectionString { get; set; }
         string DatabaseName { get; set; }
     }
@@ -28,6 +29,7 @@ namespace ATTM_API.Models
         public string KeywordsCollectionName { get; set; }
         public string TestAUTsCollectionName { get; set; }
         public string DevQueuesCollectionName { get; set; }
+        public string DevRunRecordsCollectionName { get; set; }
         public string ConnectionString { get; set; }
         public string DatabaseName { get; set; }
     }

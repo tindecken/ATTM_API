@@ -12,7 +12,7 @@ namespace ATTM_API.Models
         [BsonId]
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
-        public string ReleaseId { get; set; }
+        public string RegressionId { get; set; }
         public string Release { get; set; }
         public string Build { get; set; }
         public string TestCaseName { get; set; } 
@@ -24,7 +24,7 @@ namespace ATTM_API.Models
         public int QueueId { get; set; }
         public string Owner { get; set; }
         public string Status { get; set; }
-        public string RunRecordId { get; set; }
+        public string RegressionRunRecordId { get; set; }
         public string AnalyzeBy { get; set; }
         public string Issue { get; set; }
         public string Comment { get; set; }
