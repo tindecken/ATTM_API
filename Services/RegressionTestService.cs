@@ -23,6 +23,12 @@ namespace ATTM_API.Services
             _regressionTests = database.GetCollection<RegressionTest>(settings.RegressionTestsCollectionName);
         }
 
+        public async Task<RegressionTest> Create(RegressionTest regressionTest)
+        {
+            await _regressionTests.InsertOneAsync(regressionTest);
+            return regressionTest;
+        }
+
         public List<RegressionTest> Get() =>
             _regressionTests.Find(new BsonDocument()).ToList();
             

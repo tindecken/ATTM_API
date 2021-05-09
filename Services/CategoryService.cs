@@ -49,7 +49,6 @@ namespace ATTM_API.Services
             } catch (Exception ex) {
                 throw ex;   
             }
-            
         }
 
         public async Task<TestSuite> CreateTestSuite(string catId, TestSuite ts)

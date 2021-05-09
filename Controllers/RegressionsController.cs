@@ -36,5 +36,35 @@ namespace ATTM_API.Controllers
 
             return regression;
         }
+
+        [HttpPost]
+        public async Task<ActionResult<Regression>> Create(Regression regression)
+        {
+            var result = await _regressionService.Create(regression);
+            if (result != null)
+            {
+                return CreatedAtRoute("GetRegression", new { id = regression.Id.ToString() }, regression);
+            }
+            else
+            {
+                return StatusCode(409, $"Regression '{regression.Name}' already exists.");
+            }
+        }
+
+        [HttpPost("{regressionId:length(24)}/tests")]
+        public async Task<ActionResult<JObject>> AddTestToRegression(string regressionId, RegressionTest regressionTest)
+        {
+            var response = await _regressionService.AddTestToRegression(regressionId, regressionTest);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
     }
 }

@@ -36,5 +36,19 @@ namespace ATTM_API.Controllers
 
             return regressionTest;
         }
+
+        [HttpPost]
+        public async Task<ActionResult<RegressionTest>> Create(RegressionTest regressionTest)
+        {
+            var result = await _regressionTestService.Create(regressionTest);
+            if (result != null)
+            {
+                return CreatedAtRoute("GetRegressionTest", new { id = regressionTest.Id.ToString() }, regressionTest);
+            }
+            else
+            {
+                return StatusCode(500, $"Internal server error, can't create RegressionTest {regressionTest.TestCaseCodeName}");
+            }
+        }
     }
 }
