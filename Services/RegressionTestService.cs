@@ -17,6 +17,7 @@ namespace ATTM_API.Services
         private readonly IMongoCollection<Category> _categories;
         private readonly IMongoCollection<TestSuite> _testsuites;
         private readonly IMongoCollection<TestGroup> _testgroups;
+        private readonly IMongoCollection<TestCase> _testcases;
         private readonly IMongoCollection<RegressionRunRecord> _regresionRunRecords;
 
         public RegressionTestService(IATTMDatabaseSettings settings)
@@ -29,6 +30,7 @@ namespace ATTM_API.Services
             _testsuites = database.GetCollection<TestSuite>(settings.TestSuitesCollectionName);
             _testgroups = database.GetCollection<TestGroup>(settings.TestGroupsCollectionName);
             _regresionRunRecords = database.GetCollection<RegressionRunRecord>(settings.RegressionRunRecordsCollectionName);
+            _testcases = database.GetCollection<TestCase>(settings.TestCasesCollectionName);
         }
 
         public async Task<RegressionTest> Create(RegressionTest regressionTest)
@@ -76,6 +78,51 @@ namespace ATTM_API.Services
             result.Add("data", JToken.FromObject(regressionTest));
             return result;
         }
+
+        public async Task<JObject> CreateRegressionTestFromTestCaseId(string testCaseId)
+        {
+            // Get regression
+            JObject result = new JObject();
+
+            //get current TestCase
+            var currTestCase = await _testcases.Find<TestCase>(tc => tc.Id == testCaseId).FirstOrDefaultAsync();
+            if (currTestCase == null)
+            {
+                result.Add("result", "error");
+                result.Add("data", null);
+                result.Add("message", $"Not found TestCase with ID: {testCaseId}");
+            }
+
+            // Get TestCase FullName
+            var category = await _categories.Find<Category>(cat => cat.Id == currTestCase.CategoryId).FirstOrDefaultAsync();
+            var testsuite = await _testsuites.Find<TestSuite>(ts => ts.Id == currTestCase.TestSuiteId).FirstOrDefaultAsync();
+            var testgroup = await _testgroups.Find<TestGroup>(tg => tg.Id == currTestCase.TestGroupId).FirstOrDefaultAsync();
+
+            var regressionTest = new RegressionTest
+            {
+                TestCaseCodeName = currTestCase.CodeName,
+                TestCaseName = currTestCase.Name,
+                TestCaseFullName = $"TestProject.TestCases.{category.Name}.{testsuite.CodeName}.{currTestCase.CodeName}",
+                CategoryName = category.Name,
+                TestSuiteFullName = $"{testsuite.CodeName}: {testsuite.Name}",
+                TestGroupFullName = $"{testgroup.CodeName}: {testgroup.Name}",
+                AnalyzeBy = string.Empty,
+                Issue = string.Empty,
+                Comment = string.Empty,
+                IsHighPriority = false,
+                WorkItem = currTestCase.WorkItem,
+                QueueId = currTestCase.QueueId,
+                Owner = currTestCase.Owner,
+                Status = "InQueue",
+            };
+
+            await _regressionTests.InsertOneAsync(regressionTest);
+
+            result.Add("result", "success");
+            result.Add("message", $"Added {regressionTest.TestCaseCodeName}");
+            result.Add("data", JToken.FromObject(regressionTest));
+            return result;
+        }
         public async Task<JObject> GetLastRegressionTestRunResult(string RegressionTestId)
         {
             // Get regression
@@ -102,8 +149,22 @@ namespace ATTM_API.Services
                 .Find<RegressionRunRecord>(rrr => rrr.Id == lastRegressionRunRecordId).FirstOrDefaultAsync();
 
             // If not found --> some thing error in database --> delete it lastRegressionRunRecordId in currRegressionTest  
-
-            return result;
+            if (lastRegressionRunRecord == null)
+            {
+                currRegressionTest.RegressionRunRecordIds.RemoveAll(r => r.Equals(lastRegressionRunRecordId));
+                await _regressionTests.ReplaceOneAsync(rt => rt.Id == currRegressionTest.Id, currRegressionTest);
+                result.Add("result", "success");
+                result.Add("data", null);
+                result.Add("message", $"Not found Regression Run Record: {lastRegressionRunRecordId} --> delete it.");
+                return result;
+            }
+            else
+            {
+                result.Add("result", "success");
+                result.Add("data", JToken.FromObject(lastRegressionRunRecord));
+                result.Add("message", "test has no running history");
+                return result;
+            }
         }
     }
 }

@@ -51,10 +51,10 @@ namespace ATTM_API.Controllers
             }
         }
 
-        [HttpPost("{regressionId:length(24)}/tests")]
-        public async Task<ActionResult<JObject>> AddTestToRegression(string regressionId, RegressionTest regressionTest)
+        [HttpPost("{regressionId:length(24)}/regressiontest/{regressionTestId:length(24)}")]
+        public async Task<ActionResult<JObject>> AddTestToRegression(string regressionId, string regressionTestId)
         {
-            var response = await _regressionService.AddTestToRegression(regressionId, regressionTest);
+            var response = await _regressionService.AddTestToRegression(regressionId, regressionTestId);
             if (response == null) return StatusCode(500, $"Internal server error.");
             var result = response.GetValue("result").ToString();
             if (result.Equals("success"))

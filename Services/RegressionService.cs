@@ -52,7 +52,7 @@ namespace ATTM_API.Services
                 throw ex;
             }
         }
-        public async Task<JObject> AddTestToRegression(string regressionId, RegressionTest regressionTest)
+        public async Task<JObject> AddTestToRegression(string regressionId, string regressionTestId)
         {
             // Get regression
             JObject result = new JObject();
@@ -61,47 +61,63 @@ namespace ATTM_API.Services
             {
                 result.Add("result", "error");
                 result.Add("message", $"Not Found Regression with ID: {regressionId}");
+                result.Add("data", null);
                 return result;
             }
 
-            // Already added but with Id --> not delete it.
-            if (currRegression.RegressionTestIds.Contains(regressionTest.Id))
+            var currRegressionTest = await _regressionTests.Find<RegressionTest>(rt => rt.Id == regressionTestId).FirstOrDefaultAsync();
+            if (currRegressionTest == null)
             {
                 result.Add("result", "error");
-                result.Add("message", $"RegressionTest {regressionTest.Id} is already exist");
+                result.Add("message", $"Not Found RegressionTest with ID: {regressionTestId}");
+                result.Add("data", null);
                 return result;
             }
 
-            // get all RegressionTest and compare with input RegressionTest
-            bool isExisted = false;
-            foreach (var regressionTestId in currRegression.RegressionTestIds)
+            if (currRegression.RegressionTestIds != null)
             {
-                var regTest = await _regressionTests.Find<RegressionTest>(r => r.Id == regressionTestId)
-                    .FirstOrDefaultAsync();
-                if (regTest.TestCaseCodeName.Equals(regressionTest.TestCaseCodeName)) isExisted = true;
-            }
+                // Already added but with Id --> not delete it.
+                if (currRegression.RegressionTestIds.Contains(regressionTestId))
+                {
+                    result.Add("result", "success");
+                    result.Add("message", $"RegressionTestId {regressionTestId} is already existed");
+                    result.Add("data", null);
+                    return result;
+                }
 
-            // Already added but with CodeName --> delete it.
-            if (isExisted)
-            {
-                await _regressionTests.FindOneAndDeleteAsync(rt => rt.Id == regressionTest.Id);
-                result.Add("result", "error");
-                result.Add("message", $"RegressionTest {regressionTest.TestCaseCodeName} is already exist, deleted it.");
-                return result;
+                // get all RegressionTest and compare with input RegressionTest
+                bool isExisted = false;
+                foreach (var rtId in currRegression.RegressionTestIds)
+                {
+                    var regTest = await _regressionTests.Find<RegressionTest>(r => r.Id == rtId)
+                        .FirstOrDefaultAsync();
+                    if (regTest.TestCaseCodeName.Equals(currRegressionTest.TestCaseCodeName)) isExisted = true;
+                }
+
+                // Already added but with CodeName --> delete it.
+                if (isExisted)
+                {
+                    await _regressionTests.FindOneAndDeleteAsync(rt => rt.Id == regressionTestId);
+                    result.Add("result", "error");
+                    result.Add("message", $"RegressionTest {currRegressionTest.TestCaseCodeName} is already existed, deleted it.");
+                    result.Add("data", null);
+                    return result;
+                }
             }
 
             // Update RegressionTest, set Release, Build
             var regressionTestUpdate = Builders<RegressionTest>.Update.Set(r => r.Release, currRegression.Release)
                 .Set(r => r.Build, currRegression.Build);
-            await _regressionTests.FindOneAndUpdateAsync(r => r.Id == regressionTest.Id, regressionTestUpdate);
+            await _regressionTests.FindOneAndUpdateAsync(r => r.Id == regressionTestId, regressionTestUpdate);
 
             // Add to regression
             var filter = Builders<Regression>.Filter.Eq(r => r.Id, regressionId);
-            var update = Builders<Regression>.Update.Push(r => r.RegressionTestIds, regressionTest.Id);
+            var update = Builders<Regression>.Update.Push(r => r.RegressionTestIds, regressionTestId);
             await _regressions.FindOneAndUpdateAsync(filter, update);
             
             result.Add("result", "success");
-            result.Add("message", $"Added {regressionTest.TestCaseCodeName}");
+            result.Add("message", $"Added {currRegressionTest.TestCaseCodeName}");
+            result.Add("data", JToken.FromObject(currRegressionTest));
             return result;
         }
     }
