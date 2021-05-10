@@ -97,9 +97,17 @@ namespace ATTM_API.Services
                 // Already added but with CodeName --> delete it.
                 if (isExisted)
                 {
-                    await _regressionTests.FindOneAndDeleteAsync(rt => rt.Id == regressionTestId);
-                    result.Add("result", "error");
-                    result.Add("message", $"RegressionTest {currRegressionTest.TestCaseCodeName} is already existed, deleted it.");
+                    if (string.IsNullOrEmpty(currRegressionTest.Release))
+                    {
+                        await _regressionTests.FindOneAndDeleteAsync(rt => rt.Id == regressionTestId);
+                        result.Add("result", "error");
+                        result.Add("message", $"RegressionTest {currRegressionTest.TestCaseCodeName} is already existed, deleted it.");
+                        result.Add("data", null);
+                        return result;
+                    }
+
+                    result.Add("result", "success");
+                    result.Add("message", $"RegressionTest {currRegressionTest.TestCaseCodeName} is already existed and added in release: {currRegressionTest.Release}");
                     result.Add("data", null);
                     return result;
                 }
