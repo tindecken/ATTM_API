@@ -38,6 +38,7 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<ActionResult<RegressionTest>> Create(RegressionTest regressionTest)
         {
             var result = await _regressionTestService.Create(regressionTest);
@@ -48,6 +49,40 @@ namespace ATTM_API.Controllers
             else
             {
                 return StatusCode(500, $"Internal server error, can't create RegressionTest {regressionTest.TestCaseCodeName}");
+            }
+        }
+
+        [HttpPost("createregressiontest")]
+        [Authorize]
+        public async Task<ActionResult<JObject>> CreateRegressionTest([FromBody]TestCase testCase)
+        {
+            var response = await _regressionTestService.CreateRegressionTestFromTestCase(testCase);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+
+        [HttpGet("{regressionTestId:length(24)}", Name = "GetRegressionTestRunResult")]
+        [Authorize]
+        public async Task<ActionResult<JObject>> GetLastRegressionTestRunResult(string regressionTestId)
+        {
+            var response = await _regressionTestService.GetLastRegressionTestRunResult(regressionTestId);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
             }
         }
     }

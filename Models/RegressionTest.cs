@@ -18,13 +18,13 @@ namespace ATTM_API.Models
         public string TestCaseName { get; set; } 
         public string TestCaseFullName { get; set; }
         public string CategoryName { get; set; }
-        public string TestSuiteName { get; set; }
-        public string TestGroupName { get; set; }
+        public string TestSuiteFullName { get; set; }
+        public string TestGroupFullName { get; set; }
         public bool IsHighPriority { get; set; }
         public int QueueId { get; set; }
         public string Owner { get; set; }
         public string Status { get; set; }
-        public string RegressionRunRecordId { get; set; }
+        public List<string> RegressionRunRecordIds { get; set; }
         public string AnalyzeBy { get; set; }
         public string Issue { get; set; }
         public string Comment { get; set; }
