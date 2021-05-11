@@ -534,7 +534,6 @@ namespace ATTM_API.Helpers
                                             {
                                                 sBuilderCleanUpKeywords.Append($"\"{param.Value}\"");
                                             }
-
                                         }
                                         else
                                         {

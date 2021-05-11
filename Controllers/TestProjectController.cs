@@ -36,6 +36,22 @@ namespace ATTM_API.Controllers
             }
         }
 
+        [HttpPost("generateregressioncode")]
+        public async Task<ActionResult<JObject>> generateRegressionCode([FromBody] List<TestCase> testcases)
+        {
+            var response = await _testProjectService.GenerateCode(testcases, "Regression");
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+
         [HttpPost("createdevqueue")]
         public async Task<ActionResult<JObject>> createDevQueue([FromBody] JObject payload)
         {

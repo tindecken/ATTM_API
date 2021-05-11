@@ -107,14 +107,15 @@ namespace ATTM_API.Services
                     }
 
                     result.Add("result", "success");
-                    result.Add("message", $"RegressionTest {currRegressionTest.TestCaseCodeName} is already existed and added in release: {currRegressionTest.Release}");
+                    result.Add("message", $"RegressionTest {currRegressionTest.TestCaseCodeName} is already existed, but added in release: {currRegressionTest.Release}");
                     result.Add("data", null);
                     return result;
                 }
             }
 
             // Update RegressionTest, set Release, Build
-            var regressionTestUpdate = Builders<RegressionTest>.Update.Set(r => r.Release, currRegression.Release)
+            var regressionTestUpdate = Builders<RegressionTest>.Update
+                .Set(r => r.Release, currRegression.Release)
                 .Set(r => r.Build, currRegression.Build);
             await _regressionTests.FindOneAndUpdateAsync(r => r.Id == regressionTestId, regressionTestUpdate);
 
