@@ -24,6 +24,22 @@ namespace ATTM_API.Controllers
         public async Task<ActionResult<List<TestCase>>> Get() =>
             await _testCaseService.Get();
 
+        [HttpGet("getAllDetail")]
+        public async Task<ActionResult<JObject>> GetAllDetail()
+        {
+            var response = await _testCaseService.GetAllDetail();
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+
         [HttpGet("{id:length(24)}", Name = "GetTestCase")]
         public async Task<ActionResult<TestCase>> Get(string id)
         {
