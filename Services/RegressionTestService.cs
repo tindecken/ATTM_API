@@ -13,6 +13,7 @@ namespace ATTM_API.Services
     public class RegressionTestService
     {
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
+        private readonly IMongoCollection<Regression> _regressions;
         private readonly IMongoCollection<RegressionTest> _regressionTests;
         private readonly IMongoCollection<Category> _categories;
         private readonly IMongoCollection<TestSuite> _testsuites;
@@ -31,6 +32,7 @@ namespace ATTM_API.Services
             _testgroups = database.GetCollection<TestGroup>(settings.TestGroupsCollectionName);
             _regresionRunRecords = database.GetCollection<RegressionRunRecord>(settings.RegressionRunRecordsCollectionName);
             _testcases = database.GetCollection<TestCase>(settings.TestCasesCollectionName);
+            _regressions = database.GetCollection<Regression>(settings.RegressionsCollectionName);
         }
 
         public async Task<RegressionTest> Create(RegressionTest regressionTest)
@@ -79,50 +81,7 @@ namespace ATTM_API.Services
             return result;
         }
 
-        public async Task<JObject> CreateRegressionTestFromTestCaseId(string testCaseId)
-        {
-            // Get regression
-            JObject result = new JObject();
-
-            //get current TestCase
-            var currTestCase = await _testcases.Find<TestCase>(tc => tc.Id == testCaseId).FirstOrDefaultAsync();
-            if (currTestCase == null)
-            {
-                result.Add("result", "error");
-                result.Add("data", null);
-                result.Add("message", $"Not found TestCase with ID: {testCaseId}");
-            }
-
-            // Get TestCase FullName
-            var category = await _categories.Find<Category>(cat => cat.Id == currTestCase.CategoryId).FirstOrDefaultAsync();
-            var testsuite = await _testsuites.Find<TestSuite>(ts => ts.Id == currTestCase.TestSuiteId).FirstOrDefaultAsync();
-            var testgroup = await _testgroups.Find<TestGroup>(tg => tg.Id == currTestCase.TestGroupId).FirstOrDefaultAsync();
-
-            var regressionTest = new RegressionTest
-            {
-                TestCaseCodeName = currTestCase.CodeName,
-                TestCaseName = currTestCase.Name,
-                TestCaseFullName = $"TestProject.TestCases.{category.Name}.{testsuite.CodeName}.{currTestCase.CodeName}",
-                CategoryName = category.Name,
-                TestSuiteFullName = $"{testsuite.CodeName}: {testsuite.Name}",
-                TestGroupFullName = $"{testgroup.CodeName}: {testgroup.Name}",
-                AnalyzeBy = string.Empty,
-                Issue = string.Empty,
-                Comment = string.Empty,
-                IsHighPriority = false,
-                WorkItem = currTestCase.WorkItem,
-                QueueId = currTestCase.QueueId,
-                Owner = currTestCase.Owner,
-                Status = "InQueue",
-            };
-
-            await _regressionTests.InsertOneAsync(regressionTest);
-
-            result.Add("result", "success");
-            result.Add("message", $"Added {regressionTest.TestCaseCodeName}");
-            result.Add("data", JToken.FromObject(regressionTest));
-            return result;
-        }
+        
         public async Task<JObject> GetLastRegressionTestRunResult(string RegressionTestId)
         {
             // Get regression

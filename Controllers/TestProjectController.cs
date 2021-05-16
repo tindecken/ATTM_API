@@ -36,7 +36,7 @@ namespace ATTM_API.Controllers
             }
         }
 
-        [HttpPost("generateregressioncode")]
+        [HttpPost("generateregcode")]
         public async Task<ActionResult<JObject>> generateRegressionCode([FromBody] List<TestCase> testcases)
         {
             var response = await _testProjectService.GenerateCode(testcases, "Regression");
