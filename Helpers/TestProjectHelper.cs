@@ -25,7 +25,6 @@ namespace ATTM_API.Helpers
     public class TestProjectHelper
     {
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
-        private static readonly IConfiguration _config;
         private static string sRootDLL = System.Reflection.Assembly.GetExecutingAssembly().Location;
         public static string sRootPath = Path.GetDirectoryName(sRootDLL);
         private static DirectoryInfo drInfoRoot = new DirectoryInfo(sRootPath);
@@ -33,8 +32,6 @@ namespace ATTM_API.Helpers
         public static string sTestCasesFolder = Path.Combine(sProjectPath, "TestProject", "TestCases");
         public static string sTestProjectcsproj = Path.Combine(sProjectPath, "TestProject", "TestProject.csproj");
         public static string sKeyWordsFolder = Path.Combine(sProjectPath, "TestProject", "Keywords");
-        public static string sTestProjectFolder = drInfoRoot.Parent.FullName;
-        public static string sTestProjectDLL = Path.Combine(sTestProjectFolder, "TestProject", "TestProject.dll");
         public static string sKeywordListFile = Path.Combine(Path.GetTempPath(), "Keyword.json");
 
         public static string sPatternStartSummary = "/// <summary>";
@@ -42,10 +39,11 @@ namespace ATTM_API.Helpers
         public static string sPatternParam = @"/// <param.*</param>$";
         public static string sPatternGroupKeyword = @"public void (?<KeywordName>.+)\((?<Params>.+)\).*";
         public static string sPatternGroupParam = "<param name=\"(?<ParamName>.+)\">(?<ParamDescription>.+)Exp:(?<ParamExampleValue>.+)</param>";
-
-        
-
-        
+        private readonly ATTMAppSettings _appSettings;
+        public TestProjectHelper(ATTMAppSettings appSettings)
+        {
+            _appSettings = appSettings;
+        }
 
         /// <summary>
         /// Get the keyword list from Test\Keywords
@@ -252,10 +250,10 @@ namespace ATTM_API.Helpers
         {
             JObject result = new JObject();
             JArray arrResult = new JArray();
-            var TestProject = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["TestProject"];
-            var DefaultTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["DefaultTestCaseTimeOutInMinus"];
-            var MaximumTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["MaximumTestCaseTimeOutInMinus"];
-            var SupportBrowser = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("AppSettings")["SupportBrowser"];
+            var TestProject = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ATTMAppSettings")["TestProject"];
+            var DefaultTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ATTMAppSettings")["DefaultTestCaseTimeOutInMinus"];
+            var MaximumTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ATTMAppSettings")["MaximumTestCaseTimeOutInMinus"];
+            var SupportedBrowsers = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ATTMAppSettings")["SupportedBrowsers"];
 
             #region Delete item in file TestProject.csproj
             XmlDocument doc = new XmlDocument();
@@ -301,7 +299,7 @@ namespace ATTM_API.Helpers
 
             #region Generate Code
 
-            var lstSupportBrowser = SupportBrowser.Split(",");
+            var lstSupportBrowser = SupportedBrowsers.Split(",");
 
             List<string> lstDistinctTestSuites = new List<string>();
 
@@ -634,7 +632,7 @@ namespace ATTM_API.Helpers
             int intExitCode;
             Logger.Info("-- Start Build Project");
             ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = @"dotnet.exe";
+            startInfo.FileName = "dotnet.exe";
             startInfo.Arguments = $"build {sTestProjectcsproj}";
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
@@ -657,6 +655,75 @@ namespace ATTM_API.Helpers
             }
             Logger.Info("-- End Build Project");
             result.Add("result", intExitCode != 0 ? "error" : "success");
+
+            return result;
+        }
+
+        public static async Task<JObject> GetLatestCode()
+        {
+            JObject result = new JObject();
+            int intExitCode;
+            Logger.Info("-- Start Get Latest Code");
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = "git.exe";
+            startInfo.Arguments = $"pull";
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
+            //
+            // Start the process.
+            //
+            using (Process process = Process.Start(startInfo))
+            {
+                //
+                // Read in all the text from the process with the StreamReader.
+                //
+                using (StreamReader reader = process.StandardOutput)
+                {
+                    string line = reader.ReadToEnd();
+                    result.Add("message", line);
+                    Logger.Debug(line);
+                }
+                process.WaitForExit();
+                intExitCode = process.ExitCode;
+            }
+            Logger.Info("-- End Get Latest Code");
+            result.Add("result", intExitCode != 0 ? "error" : "success");
+
+            return result;
+        }
+
+        public static async Task<JObject> CopyCodeToClient(TestClient testClient, IATTMAppSettings appSettings)
+        {
+            JObject result = new JObject();
+            int intExitCode;
+            StringBuilder sbBuilder = new StringBuilder();
+            Logger.Info("-- Start Copy Code to Client");
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = "powershell.exe";
+            startInfo.Arguments = $@"-NoProfile -ExecutionPolicy unrestricted {Path.Combine(Path.GetDirectoryName(sRootDLL), "Helpers", "copyFiles.ps1")} {testClient.IPAddress} {testClient.User} {testClient.Password} {appSettings.BuiltSource} {testClient.RegressionFolder}";
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
+            //
+            // Start the process.
+            //
+            using (Process process = Process.Start(startInfo))
+            {
+                //
+                // Read in all the text from the process with the StreamReader.
+                //
+                using (StreamReader reader = process.StandardOutput)
+                {
+                    string line = reader.ReadToEnd();
+                    result.Add("message", JToken.Parse(line));
+                    sbBuilder.AppendLine(line);
+                    Logger.Debug(line);
+                }
+                process.WaitForExit();
+                intExitCode = process.ExitCode;
+            }
+            Logger.Info("-- End Copy Code to Client");
+            result.Add("result", intExitCode != 0 ? "error" : "success");
+            result.Add("message", sbBuilder.ToString());
 
             return result;
         }

@@ -96,5 +96,35 @@ namespace ATTM_API.Controllers
                 return StatusCode(500, response);
             }
         }
+        [HttpPost("getlatestcode")]
+        public async Task<ActionResult<JObject>> getLatestCode()
+        {
+            var response = await _testProjectService.GetLatestCode();
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+        [HttpPost("copycodetoclient")]
+        public async Task<ActionResult<JObject>> copyCodeToClients([FromBody] TestClient testClient)
+        {
+            var response = await _testProjectService.CopyCodeToClient(testClient);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
     }
 }

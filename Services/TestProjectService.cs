@@ -27,16 +27,18 @@ namespace ATTM_API.Services
         private readonly IMongoCollection<TestGroup> _testgroups;
         private readonly IMongoCollection<DevQueue> _devqueues;
         private readonly IMongoCollection<TestClient> _testclients;
-        public TestProjectService(IATTMDatabaseSettings settings)
+        private readonly IATTMAppSettings _appSettings;
+        public TestProjectService(IATTMAppSettings appSettings, IATTMDatabaseSettings dbSettings)
         {
-            var client = new MongoClient(settings.ConnectionString);
-            var database = client.GetDatabase(settings.DatabaseName);
-            _testauts = database.GetCollection<TestAUT>(settings.TestAUTsCollectionName);
-            _categories = database.GetCollection<Category>(settings.CategoriesCollectionName);
-            _testsuites = database.GetCollection<TestSuite>(settings.TestSuitesCollectionName);
-            _testgroups = database.GetCollection<TestGroup>(settings.TestGroupsCollectionName);
-            _testclients = database.GetCollection<TestClient>(settings.TestClientsCollectionName);
-            _devqueues = database.GetCollection<DevQueue>(settings.DevQueuesCollectionName);
+            _appSettings = appSettings;
+            var client = new MongoClient(dbSettings.ConnectionString);
+            var database = client.GetDatabase(dbSettings.DatabaseName);
+            _testauts = database.GetCollection<TestAUT>(dbSettings.TestAUTsCollectionName);
+            _categories = database.GetCollection<Category>(dbSettings.CategoriesCollectionName);
+            _testsuites = database.GetCollection<TestSuite>(dbSettings.TestSuitesCollectionName);
+            _testgroups = database.GetCollection<TestGroup>(dbSettings.TestGroupsCollectionName);
+            _testclients = database.GetCollection<TestClient>(dbSettings.TestClientsCollectionName);
+            _devqueues = database.GetCollection<DevQueue>(dbSettings.DevQueuesCollectionName);
         }
 
         public Task<JObject> GenerateCode(List<TestCase> testCases, string runType)
@@ -53,6 +55,15 @@ namespace ATTM_API.Services
             return TestProjectHelper.BuildProject();
             
         }
+        public Task<JObject> GetLatestCode()
+        {
+            return TestProjectHelper.GetLatestCode();
 
+        }
+        public Task<JObject> CopyCodeToClient(TestClient client)
+        {
+            return TestProjectHelper.CopyCodeToClient(client, _appSettings);
+
+        }
     }
 }

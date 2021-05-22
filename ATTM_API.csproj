@@ -14,4 +14,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="5.0.0" />
     <PackageReference Include="MongoDB.Driver" Version="2.11.4" />
   </ItemGroup>
+
+  <ItemGroup>
+    <None Update="Helpers\copyFiles.ps1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
 </Project>

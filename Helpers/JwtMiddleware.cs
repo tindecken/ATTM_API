@@ -6,6 +6,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using ATTM_API.Models;
 using ATTM_API.Services;
 
 namespace ATTM_API.Helpers
@@ -13,12 +14,12 @@ namespace ATTM_API.Helpers
     public class JwtMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly AppSettings _appSettings;
+        private readonly string _secret;
 
-        public JwtMiddleware(RequestDelegate next, IOptions<AppSettings> appSettings)
+        public JwtMiddleware(RequestDelegate next, IATTMAppSettings appSettings)
         {
             _next = next;
-            _appSettings = appSettings.Value;
+            _secret = appSettings.Secret;
         }
 
         public async Task Invoke(HttpContext context, UserService userService)
@@ -36,7 +37,7 @@ namespace ATTM_API.Helpers
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+                var key = Encoding.ASCII.GetBytes(_secret);
                 tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
                     ValidateIssuerSigningKey = true,

@@ -17,15 +17,16 @@ namespace ATTM_API.Services
     {
         // users hardcoded for simplicity, store in a db with hashed passwords in production applications
         private readonly IMongoCollection<User> _users;
-        private readonly AppSettings _appSettings;
+        private readonly ATTMAppSettings _appSettings;
+        private readonly string _secret;
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
-        public UserService(IOptions<AppSettings> appSettings, IATTMDatabaseSettings settings)
+        public UserService(IATTMAppSettings appSettings, IATTMDatabaseSettings dbSettings)
         {
-            _appSettings = appSettings.Value;
-            var client = new MongoClient(settings.ConnectionString);
-            var database = client.GetDatabase(settings.DatabaseName);
+            _secret = appSettings.Secret;
+            var client = new MongoClient(dbSettings.ConnectionString);
+            var database = client.GetDatabase(dbSettings.DatabaseName);
 
-            _users = database.GetCollection<User>(settings.UsersCollectionName);
+            _users = database.GetCollection<User>(dbSettings.UsersCollectionName);
         }
 
         public AuthenticateResponse Authenticate(AuthenticateRequest model)
@@ -56,7 +57,7 @@ namespace ATTM_API.Services
         {
             // generate token that is valid for 7 days
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_appSettings.Secret);
+            var key = Encoding.ASCII.GetBytes(_secret);
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[] { new Claim("id", user.Id.ToString()) }),

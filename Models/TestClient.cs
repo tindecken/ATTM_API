@@ -18,7 +18,7 @@ namespace ATTM_API.Models
         public string Type { get; set; }
         public string User { get; set; }
         public string Password { get; set; }
-        public string Domain { get; set; }
-        public string Instance { get; set; }
+        public string RegressionFolder { get; set; }
+        public string DevelopFolder { get; set; }
     }
 }
