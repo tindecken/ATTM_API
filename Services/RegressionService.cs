@@ -134,9 +134,12 @@ namespace ATTM_API.Services
                     IsHighPriority = false,
                     WorkItem = currTestCase.WorkItem,
                     QueueId = currTestCase.QueueId,
-                    Owner = currTestCase.Owner,
+                    Owner = currTestCase.Owner == null ? string.Empty : currTestCase.Owner,
                     Status = "InQueue",
-                    
+                    Regression = currentRegression.Name,
+                    Release = currentRegression.Release,
+                    Build = currentRegression.Build,
+                    RegressionRunRecordIds = new List<string>(),
                 };
 
                 await _regressionTests.InsertOneAsync(regressionTest);

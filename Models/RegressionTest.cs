@@ -13,6 +13,7 @@ namespace ATTM_API.Models
         [BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
         public string TestCaseId { get; set; }
+        public string Regression { get; set; }
         public string Release { get; set; }
         public string Build { get; set; }
         public string TestCaseCodeName { get; set; } 

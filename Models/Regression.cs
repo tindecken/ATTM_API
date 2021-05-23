@@ -18,6 +18,7 @@ namespace ATTM_API.Models
         public bool IsOfficial { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public string Description { get; set; }
+        public string CreateBy { get; set; }
         public DateTime StartDate { get; set; }
         public DateTime EndDate { get; set; }
         public List<string> RegressionTestIds { get; set; }
