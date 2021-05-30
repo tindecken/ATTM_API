@@ -57,7 +57,7 @@ namespace ATTM_API.Services
                 temp.Add("CreatedDate", testCase.CreatedDate);
                 temp.Add("LastModifiedDate", testCase.LastModifiedDate);
                 temp.Add("Team", testCase.Team);
-                temp.Add("QueueId", testCase.QueueId);
+                temp.Add("Queue", testCase.Queue);
                 temp.Add("CategoryId", cat.Id);
                 temp.Add("TestSuiteId", ts.Id);
                 temp.Add("TestGroupId", tg.Id);

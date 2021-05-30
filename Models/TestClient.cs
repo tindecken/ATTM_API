@@ -20,5 +20,7 @@ namespace ATTM_API.Models
         public string Password { get; set; }
         public string RegressionFolder { get; set; }
         public string DevelopFolder { get; set; }
+        public string RunnerFolder { get; set; }
+        public string Status { get; set; }
     }
 }

@@ -27,6 +27,7 @@ namespace ATTM_API.Services
         private readonly IMongoCollection<TestGroup> _testgroups;
         private readonly IMongoCollection<DevQueue> _devqueues;
         private readonly IMongoCollection<TestClient> _testclients;
+        private readonly IMongoCollection<TestCase> _testcases;
         private readonly IATTMAppSettings _appSettings;
         public TestProjectService(IATTMAppSettings appSettings, IATTMDatabaseSettings dbSettings)
         {
@@ -39,11 +40,16 @@ namespace ATTM_API.Services
             _testgroups = database.GetCollection<TestGroup>(dbSettings.TestGroupsCollectionName);
             _testclients = database.GetCollection<TestClient>(dbSettings.TestClientsCollectionName);
             _devqueues = database.GetCollection<DevQueue>(dbSettings.DevQueuesCollectionName);
+            _testcases = database.GetCollection<TestCase>(dbSettings.TestCasesCollectionName);
         }
 
-        public Task<JObject> GenerateCode(List<TestCase> testCases, string runType)
+        public Task<JObject> GenerateDevCode(List<TestCase> testCases)
         {
-            return TestProjectHelper.GenerateCode(testCases, runType, _categories, _testsuites, _testgroups, _testauts);
+            return TestProjectHelper.GenerateDevCode(testCases, _categories, _testsuites, _testgroups, _testauts);
+        }
+        public Task<JObject> GenerateRegressionCode(List<RegressionTest> regressionTests)
+        {
+            return TestProjectHelper.GenerateRegressionCode(regressionTests, _categories, _testsuites, _testgroups, _testcases, _testauts);
         }
         public async Task<JObject> CreateDevQueue(List<TestCase> testCases, TestClient testClient)
         {
@@ -63,6 +69,11 @@ namespace ATTM_API.Services
         public Task<JObject> CopyCodeToClient(TestClient client)
         {
             return TestProjectHelper.CopyCodeToClient(client, _appSettings);
+
+        }
+        public Task<JObject> UpdateReleaseForClient(TestClient client, string newValue)
+        {
+            return TestProjectHelper.UpdateReleaseForClient(client, newValue);
 
         }
     }

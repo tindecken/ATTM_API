@@ -23,7 +23,7 @@ namespace ATTM_API.Controllers
         [HttpPost("generatedevcode")]
         public async Task<ActionResult<JObject>> generateDevCode([FromBody]List<TestCase> testcases)
         {
-            var response = await _testProjectService.GenerateCode(testcases, "Dev");
+            var response = await _testProjectService.GenerateDevCode(testcases);
             if (response == null) return StatusCode(500, $"Internal server error.");
             var result = response.GetValue("result").ToString();
             if (result.Equals("success"))
@@ -37,9 +37,9 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost("generateregcode")]
-        public async Task<ActionResult<JObject>> generateRegressionCode([FromBody] List<TestCase> testcases)
+        public async Task<ActionResult<JObject>> generateRegressionCode([FromBody] List<RegressionTest> regressionTests)
         {
-            var response = await _testProjectService.GenerateCode(testcases, "Regression");
+            var response = await _testProjectService.GenerateRegressionCode(regressionTests);
             if (response == null) return StatusCode(500, $"Internal server error.");
             var result = response.GetValue("result").ToString();
             if (result.Equals("success"))
@@ -115,6 +115,21 @@ namespace ATTM_API.Controllers
         public async Task<ActionResult<JObject>> copyCodeToClients([FromBody] TestClient testClient)
         {
             var response = await _testProjectService.CopyCodeToClient(testClient);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+        [HttpPost("updatereleaseforclient/{newValue}")]
+        public async Task<ActionResult<JObject>> updateReleaseForClient([FromBody] TestClient testClient, string newValue)
+        {
+            var response = await _testProjectService.UpdateReleaseForClient(testClient, newValue);
             if (response == null) return StatusCode(500, $"Internal server error.");
             var result = response.GetValue("result").ToString();
             if (result.Equals("success"))

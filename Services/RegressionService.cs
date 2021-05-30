@@ -133,7 +133,7 @@ namespace ATTM_API.Services
                     Comment = string.Empty,
                     IsHighPriority = false,
                     WorkItem = currTestCase.WorkItem,
-                    QueueId = currTestCase.QueueId,
+                    Queue = currTestCase.Queue,
                     Owner = currTestCase.Owner ?? string.Empty,
                     Status = "InQueue",
                     Regression = currentRegression.Name,

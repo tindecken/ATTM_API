@@ -16,6 +16,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Update="Helpers\updateRegressionSetting.ps1">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Helpers\copyFiles.ps1">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

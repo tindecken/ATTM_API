@@ -26,7 +26,7 @@ namespace ATTM_API.Models
         public string WorkItem { get; set; } = string.Empty;
         public string Owner { get; set; }
         public string Team { get; set; }
-        public int QueueId { get; set; }
+        public string Queue { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime LastModifiedDate { get; set; } = DateTime.UtcNow;
         

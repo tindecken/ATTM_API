@@ -246,7 +246,7 @@ namespace ATTM_API.Helpers
             }
         }
 
-        public static async Task<JObject> GenerateCode(List<TestCase> lstTestCases, string runType, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestAUT> testAUTs)
+        public static async Task<JObject> GenerateDevCode(List<TestCase> lstTestCases, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestAUT> testAUTs)
         {
             JObject result = new JObject();
             JArray arrResult = new JArray();
@@ -364,7 +364,379 @@ namespace ATTM_API.Helpers
                         stringBuilder.AppendLine($"\t\t[Category(\"{category.Name}\")]");
                         stringBuilder.AppendLine($"\t\t[TestSuite(\"{testSuite.Name}\")]");
                         stringBuilder.AppendLine($"\t\t[TestGroup(\"{testGroup.Name}\")]");
-                        stringBuilder.AppendLine($"\t\t[RunType(\"{runType}\")]");
+                        stringBuilder.AppendLine($"\t\t[RunType(\"Dev\")]");
+                        stringBuilder.AppendLine($"\t\t[Author(\"{tc.Owner}\")]");
+                        stringBuilder.AppendLine($"\t\t[Team(\"{tc.Team}\")]");
+                        stringBuilder.AppendLine($"\t\t[RunOwner(\"{Environment.MachineName}\")]");
+                        stringBuilder.AppendLine($"\t\t[TestCaseType(\"{tc.TestCaseType}\")]");
+                        List<string> lstDistinctAUTIds = new List<string>();
+                        List<TestAUT> lstDistinctAUTs = new List<TestAUT>();
+                        foreach (TestStep ts in tc.TestSteps)
+                        {
+                            if (ts.Keyword == null) continue;
+                            if (string.IsNullOrEmpty(ts.Keyword.Name)) continue;
+                            if (ts.IsDisabled || ts.IsDisabled || ts.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
+                            bool containsItem = lstDistinctAUTIds.Any(item => item.ToUpper().Equals(ts.TestAUTId.ToUpper()));
+                            if (!containsItem) lstDistinctAUTIds.Add(ts.TestAUTId);
+                        }
+
+                        foreach (string autId in lstDistinctAUTIds)
+                        {
+                            var testAUT = await testAUTs.Find<TestAUT>(aut => aut.Id == autId).FirstOrDefaultAsync();
+                            lstDistinctAUTs.Add(testAUT);
+                        }
+
+                        foreach (TestAUT aut in lstDistinctAUTs)
+                        {
+                            if (lstSupportBrowser.Contains(aut.Name))
+                            {
+                                stringBuilder.AppendLine($"\t\t[WebDriver(\"{aut.Name}\")]");
+                            }
+                        }
+                        stringBuilder.AppendLine($"\t\t[WorkItem(\"{tc.WorkItem}\")]");
+                        stringBuilder.AppendLine($"\t\t// {tc.Name}");
+                        stringBuilder.AppendLine($"\t\tpublic void {tc.CodeName}()");
+                        stringBuilder.AppendLine("\t\t{");
+
+
+                        foreach (TestAUT aut in lstDistinctAUTs)
+                        {
+                            if (lstSupportBrowser.Contains(aut.Name))
+                            {
+                                stringBuilder.AppendLine($"\t\t\tWebDriverFactory.InitBrowser(\"{aut.Name}\");");
+                            }
+                        }
+
+                        //TestSteps block
+                        List<TestStep> lstDistinctTestSteps = new List<TestStep>();
+                        foreach (var testStep in tc.TestSteps)
+                        {
+                            if (testStep.IsDisabled || testStep.IsComment || testStep.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
+                            bool containsItem = lstDistinctTestSteps.Any(item => item.KWFeature == testStep.KWFeature && item.TestAUTId == testStep.TestAUTId);
+                            if (!containsItem) lstDistinctTestSteps.Add(testStep);
+                        }
+
+                        foreach (TestStep ts in lstDistinctTestSteps)
+                        {
+                            TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == ts.TestAUTId).FirstOrDefaultAsync();
+                            if (lstSupportBrowser.Contains(aut.Name))
+                            {
+                                stringBuilder.Append($"\t\t\t{ts.KWFeature} {aut.Name}_{ts.KWFeature} = new {ts.KWFeature}(WebDriverFactory.Driver");
+                                stringBuilder.Append($"{aut.Name.Substring(aut.Name.Length - 1)}");
+                                stringBuilder.AppendLine(");");
+                            }
+                            else
+                            {
+                                stringBuilder.AppendLine($"\t\t\t{ts.KWFeature} {aut.Name}_{ts.KWFeature} = new {ts.KWFeature}();");
+                            }
+                        }
+
+                        stringBuilder.AppendLine("\t\t\t// ------------------------------------------------------");
+                        stringBuilder.AppendLine();
+
+                        StringBuilder sBuilderCleanUpKeywords = new StringBuilder();
+                        StringBuilder sBuilderKeywords = new StringBuilder();
+
+                        //index of CleanUp Keyword
+                        int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Keyword.Name.ToUpper().Equals("CLEANUP"));
+                        Logger.Info(indexCleanUp == -1
+                            ? $"Test case [{tc.Name}] has no CleanUp step"
+                            : $"Test case [{tc.Name}] - CleanUp at index: {indexCleanUp}");
+                        //I do hardcoded indexCleanUp in case of user doesn't use CleanUp in the test case
+                        if (indexCleanUp == -1) indexCleanUp = int.MaxValue;
+                        for (int i = 0; i < tc.TestSteps.Count; i++)
+                        {
+                            if (tc.TestSteps[i].Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
+                            // BEFORE CLEANUP
+                            if (i < indexCleanUp)
+                            {
+                                if (tc.TestSteps[i].IsComment)
+                                {
+                                    sBuilderKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
+                                }
+                                else
+                                {
+                                    if (tc.TestSteps[i].IsDisabled)
+                                    {
+                                        sBuilderKeywords.Append("\t\t\t// ");
+                                    }
+                                    else
+                                    {
+                                        sBuilderKeywords.Append("\t\t\t");
+                                    }
+                                    TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                    sBuilderKeywords.Append($"{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+                                    foreach (TestParam param in tc.TestSteps[i].Params)
+                                    {
+                                        if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                        {
+                                            if (string.IsNullOrEmpty(param.Value))
+                                            {
+                                                sBuilderKeywords.Append($"null");
+                                            }
+                                            else
+                                            {
+                                                sBuilderKeywords.Append($"\"{param.Value}\"");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (string.IsNullOrEmpty(param.Value))
+                                            {
+                                                sBuilderKeywords.Append($"null, ");
+                                            }
+                                            else
+                                            {
+                                                sBuilderKeywords.Append($"\"{param.Value}\", ");
+                                            }
+
+                                        }
+                                    }
+                                    sBuilderKeywords.AppendLine(");");
+                                }
+                            }
+                            //AFTER CLEANUP
+                            else
+                            {
+                                if (!isTearDownCommentAdded)
+                                {
+                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t// Teardown");
+                                    isTearDownCommentAdded = true;
+                                }
+
+                                if (tc.TestSteps[i].IsComment)
+                                {
+                                    sBuilderCleanUpKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
+                                }
+                                else
+                                {
+                                    if (tc.TestSteps[i].IsDisabled)
+                                    {
+                                        sBuilderCleanUpKeywords.Append("\t\t\t// ");
+                                    }
+                                    else
+                                    {
+                                        sBuilderCleanUpKeywords.Append("\t\t\t");
+                                    }
+                                    TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                    sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+                                    foreach (TestParam param in tc.TestSteps[i].Params)
+                                    {
+                                        if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                        {
+                                            if (string.IsNullOrEmpty(param.Value))
+                                            {
+                                                sBuilderCleanUpKeywords.Append($"null");
+                                            }
+                                            else
+                                            {
+                                                sBuilderCleanUpKeywords.Append($"\"{param.Value}\"");
+                                            }
+                                        }
+                                        else
+                                        {
+                                            if (string.IsNullOrEmpty(param.Value))
+                                            {
+                                                sBuilderCleanUpKeywords.Append($"null, ");
+                                            }
+                                            else
+                                            {
+                                                sBuilderCleanUpKeywords.Append($"\"{param.Value}\", ");
+                                            }
+                                        }
+                                    }
+                                    sBuilderCleanUpKeywords.AppendLine("));");
+                                }
+                            }
+                        }
+
+                        stringBuilder.Append(sBuilderCleanUpKeywords);
+                        stringBuilder.AppendLine("\t\t\t// ------------------------------------------------------");
+                        stringBuilder.AppendLine();
+
+                        stringBuilder.Append(sBuilderKeywords);
+                        stringBuilder.AppendLine("\t\t}");
+                        stringBuilder.AppendLine("");
+
+                        iOrder++;
+                    }
+                    stringBuilder.AppendLine("\t}");
+                    stringBuilder.AppendLine("}");
+
+                    using (StreamWriter file = new StreamWriter(tsCodeFile))
+                    {
+                        file.WriteLine(stringBuilder.ToString());
+                    }
+
+                    JObject jObjectTestCase = new JObject();
+                    jObjectTestCase.Add("testCase", testcase.CodeName);
+                    jObjectTestCase.Add("category", category.Name);
+                    jObjectTestCase.Add("testGroup", testGroup.CodeName);
+                    jObjectTestCase.Add("testSuite", testSuite.CodeName);
+                    jObjectTestCase.Add("testSuiteFile", tsCodeFile);
+                    jObjectTestCase.Add("generatedCode", stringBuilder.ToString());
+                    arrResult.Add(jObjectTestCase);
+                }
+            }
+            result.Add("result", "success");
+            result.Add("count", arrResult.Count);
+            result.Add("message", arrResult);
+
+            return result;
+            #endregion
+        }
+
+        public static async Task<JObject> GenerateRegressionCode(List<RegressionTest> lstRegressionTests, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestCase> testcases, IMongoCollection<TestAUT> testAUTs)
+        {
+            JObject result = new JObject();
+            JArray arrResult = new JArray();
+            var TestProject = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ATTMAppSettings")["TestProject"];
+            var DefaultTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ATTMAppSettings")["DefaultTestCaseTimeOutInMinus"];
+            var MaximumTestCaseTimeOutInMinus = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ATTMAppSettings")["MaximumTestCaseTimeOutInMinus"];
+            var SupportedBrowsers = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build().GetSection("ATTMAppSettings")["SupportedBrowsers"];
+
+            #region Delete item in file TestProject.csproj
+            XmlDocument doc = new XmlDocument();
+            doc.Load(sTestProjectcsproj);
+            XmlNamespaceManager nsmgr = new XmlNamespaceManager(doc.NameTable);
+            nsmgr.AddNamespace("ns", "http://schemas.microsoft.com/developer/msbuild/2003");
+            string sXpath = $@"ns:Project/ns:ItemGroup/ns:Compile[@Include]";
+            XmlNodeList nodes = doc.SelectNodes(sXpath, nsmgr);
+            foreach (XmlNode node in nodes)
+            {
+                if (node.Attributes["Include"].Value.StartsWith("TestCaseIds") && !node.Attributes["Include"].Value.Contains(@"TestCaseIds\EXCLUDE"))
+                {
+                    node.ParentNode.RemoveChild(node);
+                }
+            }
+            doc.Save(sTestProjectcsproj);
+
+            #endregion
+
+            #region Delete all TestCaseIds Folder (but subfolder EXCLUDE) in TestProject
+
+            if (Directory.Exists(sTestCasesFolder))
+            {
+                DirectoryInfo diTestCases = new DirectoryInfo(sTestCasesFolder);
+                foreach (FileInfo fiItem in diTestCases.GetFiles())
+                {
+                    fiItem.Delete();
+                }
+                foreach (DirectoryInfo diItem in diTestCases.GetDirectories())
+                {
+                    if (!diItem.Name.ToUpper().Equals("EXCLUDE"))
+                    {
+                        diItem.Delete(true);
+                    }
+                }
+            }
+            else
+            {
+                Logger.Error($"There's no TestCaseIds Folder in TestProject, please check");
+            }
+
+            #endregion
+
+            #region Generate Code
+
+            var lstSupportBrowser = SupportedBrowsers.Split(",");
+
+            List<string> lstDistinctTestSuites = new List<string>();
+            List<TestCaseExtend> lstTestCases = new List<TestCaseExtend>();
+            foreach (var regTest in lstRegressionTests)
+            {
+                var tmpTestCase = await testcases.Find(tc => tc.Id == regTest.TestCaseId).FirstOrDefaultAsync();
+                var tmpTestCaseExtend = new TestCaseExtend()
+                {
+                    RegressionTestId = regTest.Id,
+                    Name = tmpTestCase.Name,
+                    CodeName = tmpTestCase.CodeName,
+                    TestCaseType = tmpTestCase.TestCaseType,
+                    LastRunningStatus = tmpTestCase.LastRunningStatus,
+                    IsPrimary = tmpTestCase.IsPrimary,
+                    IsDisabled = tmpTestCase.IsDisabled,
+                    IsDeleted = tmpTestCase.IsDeleted,
+                    WorkItem = tmpTestCase.WorkItem,
+                    Owner = tmpTestCase.Owner,
+                    Team = tmpTestCase.Team,
+                    Queue = tmpTestCase.Queue,
+                    CreatedDate = tmpTestCase.CreatedDate,
+                    LastModifiedDate =  tmpTestCase.LastModifiedDate,
+                    LastModifiedUser = tmpTestCase.LastModifiedUser,
+                    Description = tmpTestCase.Description,
+                    TimeOutInMinutes = tmpTestCase.TimeOutInMinutes,
+                    DependOn =  tmpTestCase.DependOn,
+                    CategoryId = tmpTestCase.CategoryId,
+                    TestSuiteId = tmpTestCase.TestSuiteId,
+                    TestGroupId = tmpTestCase.TestGroupId,
+                    TestSteps = tmpTestCase.TestSteps,
+                };
+                if (tmpTestCase != null) lstTestCases.Add(tmpTestCaseExtend);
+            }
+
+            foreach (var tcase in lstTestCases)
+            {
+                bool containsItem = lstDistinctTestSuites.Any(tsId => tsId.Equals(tcase.TestSuiteId));
+                if (!containsItem) lstDistinctTestSuites.Add(tcase.TestSuiteId);
+            }
+
+            foreach (var tsId in lstDistinctTestSuites)
+            {
+                var testSuite = testsuites.Find<TestSuite>(ts => ts.Id == tsId).FirstOrDefault();
+                foreach (var testcase in lstTestCases)
+                {
+                    if (!testcase.TestSuiteId.Equals(tsId)) continue;
+                    Logger.Debug($"TestCase: {JsonConvert.SerializeObject(testcase)}");
+                    var category = categories.Find<Category>(cat => cat.Id == testcase.CategoryId).FirstOrDefault();
+                    var testGroup = testgroups.Find<TestGroup>(tg => tg.Id == testcase.TestGroupId).FirstOrDefault();
+                    // Create Category folder if not exist
+                    if (!Directory.Exists(Path.Combine(sTestCasesFolder, category.Name)))
+                    {
+                        Directory.CreateDirectory(Path.Combine(sTestCasesFolder, category.Name));
+                    }
+
+                    string tsCodeFile = Path.Combine(TestProject, "TestCases", category.Name, testSuite.CodeName + ".cs");
+
+                    StringBuilder stringBuilder = new StringBuilder();
+                    stringBuilder.AppendLine(@"using NUnit.Framework;");
+                    stringBuilder.AppendLine(@"using NUnit.Framework.Internal;");
+                    stringBuilder.AppendLine(@"using System;");
+                    stringBuilder.AppendLine(@"using TestProject.Framework;");
+                    stringBuilder.AppendLine(@"using TestProject.Framework.CustomAttributes;");
+                    stringBuilder.AppendLine(@"using TestProject.Keywords;");
+                    stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
+                    stringBuilder.AppendLine(@"using TestProject.Keywords.Saucedemo;");
+                    stringBuilder.AppendLine("");
+                    stringBuilder.AppendLine($@"namespace TestProject.TestCases.{category.Name}");
+                    stringBuilder.AppendLine(@"{");
+                    stringBuilder.AppendLine("\t[TestFixture]");
+                    stringBuilder.AppendLine($"\tclass {testSuite.CodeName} : SetupAndTearDown");
+                    stringBuilder.AppendLine("\t{");
+                    stringBuilder.AppendLine("");
+
+                    //TestCase Block
+                    int iOrder = 1;
+                    foreach (TestCaseExtend tc in lstTestCases)
+                    {
+                        if (!tc.TestSuiteId.Equals(tsId)) continue;
+                        bool isTearDownCommentAdded = false;
+                        if (tc.TestSteps.Count == 0) continue;
+                        if (tc.TimeOutInMinutes == 0)
+                        {
+                            stringBuilder.AppendLine($"\t\t[Test, Timeout({int.Parse(MaximumTestCaseTimeOutInMinus) * 60000}), Order({iOrder})]");
+                        }
+                        else
+                        {
+                            stringBuilder.AppendLine($"\t\t[Test, Timeout({tc.TimeOutInMinutes * 60000}), Order({iOrder})]");
+                        }
+                        stringBuilder.AppendLine($"\t\t[TestCaseCodeName(\"{tc.CodeName}\")]");
+                        stringBuilder.AppendLine($"\t\t[RegressionTestId(\"{tc.RegressionTestId}\")]");
+                        stringBuilder.AppendLine($"\t\t[TestCaseName(\"{tc.Name}\")]");
+                        stringBuilder.AppendLine($"\t\t[Description(\"{tc.Description}\")]");
+                        stringBuilder.AppendLine($"\t\t[Category(\"{category.Name}\")]");
+                        stringBuilder.AppendLine($"\t\t[TestSuite(\"{testSuite.Name}\")]");
+                        stringBuilder.AppendLine($"\t\t[TestGroup(\"{testGroup.Name}\")]");
+                        stringBuilder.AppendLine($"\t\t[RunType(\"Regression\")]");
                         stringBuilder.AppendLine($"\t\t[Author(\"{tc.Owner}\")]");
                         stringBuilder.AppendLine($"\t\t[Team(\"{tc.Team}\")]");
                         stringBuilder.AppendLine($"\t\t[RunOwner(\"{Environment.MachineName}\")]");
@@ -703,25 +1075,53 @@ namespace ATTM_API.Helpers
             startInfo.Arguments = $@"-NoProfile -ExecutionPolicy unrestricted {Path.Combine(Path.GetDirectoryName(sRootDLL), "Helpers", "copyFiles.ps1")} {testClient.IPAddress} {testClient.User} {testClient.Password} {appSettings.BuiltSource} {testClient.RegressionFolder}";
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
-            //
-            // Start the process.
-            //
+            
             using (Process process = Process.Start(startInfo))
             {
-                //
-                // Read in all the text from the process with the StreamReader.
-                //
                 using (StreamReader reader = process.StandardOutput)
                 {
                     string line = reader.ReadToEnd();
-                    result.Add("message", JToken.Parse(line));
                     sbBuilder.AppendLine(line);
                     Logger.Debug(line);
                 }
-                process.WaitForExit();
+                await process.WaitForExitAsync();
                 intExitCode = process.ExitCode;
             }
+
             Logger.Info("-- End Copy Code to Client");
+            Logger.Info($"-- ExitCode: {intExitCode}");
+            result.Add("result", intExitCode != 0 ? "error" : "success");
+            result.Add("message", sbBuilder.ToString());
+
+            return result;
+        }
+
+        public static async Task<JObject> UpdateReleaseForClient(TestClient testClient, string ReleaseName)
+        {
+            JObject result = new JObject();
+            int intExitCode;
+            StringBuilder sbBuilder = new StringBuilder();
+            Logger.Info("-- Start updating Release for client");
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = "powershell.exe";
+            startInfo.Arguments = $@"-NoProfile -ExecutionPolicy unrestricted {Path.Combine(Path.GetDirectoryName(sRootDLL), "Helpers", "updateRegressionSetting.ps1")} {testClient.IPAddress} {testClient.User} {testClient.Password} {testClient.RunnerFolder} {ReleaseName}";
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
+
+            using (Process process = Process.Start(startInfo))
+            {
+                using (StreamReader reader = process.StandardOutput)
+                {
+                    string line = reader.ReadToEnd();
+                    sbBuilder.AppendLine(line);
+                    Logger.Debug(line);
+                }
+                await process.WaitForExitAsync();
+                intExitCode = process.ExitCode;
+            }
+
+            Logger.Info("-- End updating Release for client");
+            Logger.Info($"-- ExitCode: {intExitCode}");
             result.Add("result", intExitCode != 0 ? "error" : "success");
             result.Add("message", sbBuilder.ToString());
 
@@ -729,4 +1129,8 @@ namespace ATTM_API.Helpers
         }
     }
 
+    public class TestCaseExtend: TestCase
+    {
+        public string RegressionTestId;
+    }
 }

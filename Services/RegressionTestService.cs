@@ -68,7 +68,7 @@ namespace ATTM_API.Services
                 Issue = string.Empty,
                 Comment = string.Empty,
                 IsHighPriority = false,
-                QueueId = testCase.QueueId,
+                Queue = testCase.Queue,
                 Owner = testCase.Owner,
                 Status = "InQueue",
             };
