@@ -22,5 +22,10 @@ namespace ATTM_API.Models
         public string DevelopFolder { get; set; }
         public string RunnerFolder { get; set; }
         public string Status { get; set; }
+
+        public string DeploySourceMessage { get; set; }
+        public string DeploySourceStatus { get; set; }
+        public string UpdateReleaseMessage { get; set; }
+        public string UpdateReleaseStatus { get; set; }
     }
 }

@@ -10,11 +10,13 @@ try {
 	$mycreds = New-Object System.Management.Automation.PSCredential($UserName, $Password)
     $newValue = "Name=`"RegressionName`" Value=`"$NewValue`"></Setting>"
 	New-PSDrive -Name H -PSProvider FileSystem -Root \\$IPAddress\c$\$SettingFolder -Credential $mycreds -Persist -ErrorAction Stop
-	((Get-Content -Path "H:\settings.xml" -Raw) -replace 'Name="RegressionName" Value=".*"></Setting>',$newValue) | Set-Content -Path "H:\settings.xml" -ErrorAction Stop
-	Remove-PSDrive -Name H -ErrorAction Stop
+	((Get-Content -Path "H:\settings.xml" -Raw -ErrorAction Stop) -replace 'Name="RegressionName" Value=".*"></Setting>',$newValue) | Set-Content -Path "H:\settings.xml" -ErrorAction Stop
 }
 catch {
 	Write-Host "An error occurred:"
 	Write-Host $_
 	exit 1
+}
+finally {
+	Remove-PSDrive -Name H -ErrorAction Stop
 }
