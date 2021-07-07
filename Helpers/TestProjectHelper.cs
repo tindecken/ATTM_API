@@ -358,7 +358,8 @@ namespace ATTM_API.Helpers
                         {
                             stringBuilder.AppendLine($"\t\t[Test, Timeout({tc.TimeOutInMinutes * 60000}), Order({iOrder})]");
                         }
-                        stringBuilder.AppendLine($"\t\t[TestCaseId(\"{tc.CodeName}\")]");
+                        stringBuilder.AppendLine($"\t\t[TestCaseId(\"{tc.Id}\")]");
+                        stringBuilder.AppendLine($"\t\t[TestCaseCodeName(\"{tc.CodeName}\")]");
                         stringBuilder.AppendLine($"\t\t[TestCaseName(\"{tc.Name}\")]");
                         stringBuilder.AppendLine($"\t\t[Description(\"{tc.Description}\")]");
                         stringBuilder.AppendLine($"\t\t[Category(\"{category.Name}\")]");
@@ -462,6 +463,7 @@ namespace ATTM_API.Helpers
                                     }
                                     else
                                     {
+                                        sBuilderKeywords.AppendLine($"\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"Keyword\", \"{tc.TestSteps[i].Keyword.Name}\");");
                                         sBuilderKeywords.Append("\t\t\t");
                                     }
                                     TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
@@ -493,6 +495,7 @@ namespace ATTM_API.Helpers
                                         }
                                     }
                                     sBuilderKeywords.AppendLine(");");
+                                    sBuilderKeywords.AppendLine();
                                 }
                             }
                             //AFTER CLEANUP
@@ -519,7 +522,10 @@ namespace ATTM_API.Helpers
                                         sBuilderCleanUpKeywords.Append("\t\t\t");
                                     }
                                     TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                    sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+                                    sBuilderCleanUpKeywords.AppendLine($"AdditionalTearDown(() =>");
+                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
+                                    sBuilderCleanUpKeywords.AppendLine($"\t\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"Keyword\", \"{tc.TestSteps[i].Keyword.Name}\");");
+                                    sBuilderCleanUpKeywords.Append($"\t\t\t\t{aut.Name}_{ tc.TestSteps[i].KWFeature}.{ tc.TestSteps[i].Keyword.Name}(");
                                     foreach (TestParam param in tc.TestSteps[i].Params)
                                     {
                                         if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
@@ -545,7 +551,8 @@ namespace ATTM_API.Helpers
                                             }
                                         }
                                     }
-                                    sBuilderCleanUpKeywords.AppendLine("));");
+                                    sBuilderCleanUpKeywords.AppendLine(");");
+                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t});");
                                 }
                             }
                         }
@@ -834,6 +841,7 @@ namespace ATTM_API.Helpers
                                     }
                                     else
                                     {
+                                        sBuilderKeywords.AppendLine($"\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"Keyword\", \"{tc.TestSteps[i].Keyword.Name}\");");
                                         sBuilderKeywords.Append("\t\t\t");
                                     }
                                     TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
@@ -891,7 +899,10 @@ namespace ATTM_API.Helpers
                                         sBuilderCleanUpKeywords.Append("\t\t\t");
                                     }
                                     TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                    sBuilderCleanUpKeywords.Append($"AdditionalTearDown(() => {aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+                                    sBuilderCleanUpKeywords.AppendLine($"AdditionalTearDown(() =>");
+                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
+                                    sBuilderCleanUpKeywords.AppendLine($"\t\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"Keyword\", \"{tc.TestSteps[i].Keyword.Name}\");");
+                                    sBuilderCleanUpKeywords.Append($"\t\t\t\t{aut.Name}_{ tc.TestSteps[i].KWFeature}.{ tc.TestSteps[i].Keyword.Name}(");
                                     foreach (TestParam param in tc.TestSteps[i].Params)
                                     {
                                         if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
@@ -917,7 +928,8 @@ namespace ATTM_API.Helpers
                                             }
                                         }
                                     }
-                                    sBuilderCleanUpKeywords.AppendLine("));");
+                                    sBuilderCleanUpKeywords.AppendLine(");");
+                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t});");
                                 }
                             }
                         }

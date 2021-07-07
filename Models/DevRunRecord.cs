@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
@@ -15,6 +16,7 @@ namespace ATTM_API.Models
         [JsonRequired]
         public string TestCaseId { get; set; }
         [JsonRequired]
+        public string TestCaseCodeName { get; set; }
         public string TestCaseName { get; set; }
         public string Description { get; set; }
         public string TestCaseType { get; set; }
@@ -35,5 +37,6 @@ namespace ATTM_API.Models
         public string Screenshot1 { get; set; }
         public string Screenshot2 { get; set; }
         public string Comments { get; set; }
+        public Dictionary<string, string> Buffers { get; set; } = new Dictionary<string, string>();
     }
 }

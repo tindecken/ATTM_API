@@ -14,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using ATTM_API.Services;
 using ATTM_API.Helpers;
+using ATTM_API.SignalRHub;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 
@@ -65,6 +66,7 @@ namespace ATTM_API
                     Version = "v1",
                 });
             });
+            services.AddSignalR();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -90,16 +92,16 @@ namespace ATTM_API
             app.UseRouting();
 
             // global cors policy
-            app.UseCors(x => x
-                .AllowAnyOrigin()
+            app.UseCors(x => x.WithOrigins("http://localhost:8080")
                 .AllowAnyMethod()
-                .AllowAnyHeader());
-            app.UseWebSockets();
+                .AllowAnyHeader()
+                .AllowCredentials());
             // custom jwt auth middleware
             app.UseMiddleware<JwtMiddleware>();
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
+                endpoints.MapHub<MonitoringHub>("/monitoring");
             });
         }
     }

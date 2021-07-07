@@ -18,6 +18,7 @@ namespace ATTM_API.Models
         public List<TestParam> Params { get; set; } = new List<TestParam>();
         public bool IsDisabled { get; set; } = false;
         public bool IsComment { get; set; } = false;
+        public string Status { get; set; }
 
     }
 }
