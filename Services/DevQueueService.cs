@@ -29,5 +29,17 @@ namespace ATTM_API.Services
 
         public async Task<DevQueue> Get(string id) =>
             await _devQueues.Find<DevQueue>(devQueue => devQueue.Id == id).FirstOrDefaultAsync();
+        
+        public async Task<JObject> GetInQueueDevRecord()
+        {
+            JObject result = new JObject();
+            var devInQueues = await _devQueues.Find(dev => dev.QueueStatus == "InQueue").ToListAsync();
+            
+            result.Add("count", devInQueues.Count);
+            result.Add("result", "success");
+            result.Add("data", JToken.FromObject(devInQueues));
+
+            return result;
+        }
     }
 }

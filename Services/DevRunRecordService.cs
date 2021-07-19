@@ -35,9 +35,9 @@ namespace ATTM_API.Services
         public async Task<JObject> GetDevRunRecordsForTestCase(string testCaseId)
         {
             JObject result = new JObject();
-            var devRunRecords = _devRunRecords.Find<DevRunRecord>(d => d.TestCaseId == testCaseId)
+            var devRunRecords = await _devRunRecords.Find<DevRunRecord>(d => d.TestCaseId == testCaseId)
                 .SortByDescending(d => d.StartAt)
-                .ToList();
+                .ToListAsync();
             result.Add("result", "success");
             result.Add("count", devRunRecords.Count);
             if (devRunRecords.Count == 0)
@@ -79,6 +79,24 @@ namespace ATTM_API.Services
 
             return result;
         }
-
+        public async Task<JObject> GetAllDevRunRecordsForTestCase()
+        {
+            JObject result = new JObject();
+            JArray data = new JArray();
+            var testCaseIdList = await _devRunRecords.Distinct(f => f.TestCaseId, new BsonDocument()).ToListAsync();
+            foreach (var testCaseId in testCaseIdList)
+            {
+                var devRunRecord = await _devRunRecords.Find<DevRunRecord>(d => d.TestCaseId == testCaseId)
+                    .SortByDescending(d => d.StartAt)
+                    .FirstOrDefaultAsync();
+                if (devRunRecord != null) data.Add(JToken.FromObject(devRunRecord));
+            }
+            result.Add("count", data.Count);
+            result.Add("result", "success");
+            result.Add("data", data);
+            
+            return result;
+        }
+        
     }
 }

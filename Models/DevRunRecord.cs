@@ -33,7 +33,6 @@ namespace ATTM_API.Models
         public int ExecuteTime { get; set; }
         public string RunMachine { get; set; }
         public string ErrorScreenshot { get; set; }
-        public string ErrorTearDownScreenshot { get; set; }
         public string Screenshot1 { get; set; }
         public string Screenshot2 { get; set; }
         public string Comments { get; set; }

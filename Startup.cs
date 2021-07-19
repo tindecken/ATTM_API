@@ -17,6 +17,7 @@ using ATTM_API.Helpers;
 using ATTM_API.SignalRHub;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json.Serialization;
 
 namespace ATTM_API
 {
@@ -57,6 +58,7 @@ namespace ATTM_API
             services.AddSingleton<RegressionService>();
             services.AddSingleton<RegressionTestService>();
             services.AddSingleton<RegressionRunRecordService>();
+            services.AddSingleton<GridFSBucketService>();
             services.AddControllers()
                 .AddNewtonsoftJson(options => options.UseMemberCasing());
             services.AddControllers();
@@ -66,7 +68,10 @@ namespace ATTM_API
                     Version = "v1",
                 });
             });
-            services.AddSignalR();
+            services.AddSignalR().AddJsonProtocol(options =>
+            {
+                options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -25,6 +25,7 @@ namespace ATTM_API.Controllers
             _devQueueService.Get();
 
         [HttpGet("{id:length(24)}", Name = "GetDevQueue")]
+        [Authorize]
         public async Task<ActionResult<DevQueue>> Get(string id)
         {
             var devQueue = await _devQueueService.Get(id);
@@ -35,6 +36,22 @@ namespace ATTM_API.Controllers
             }
 
             return devQueue;
+        }
+        [HttpGet("inQueue")]
+        [Authorize]
+        public async Task<ActionResult<JObject>> GetInQueueDevRecord()
+        {
+            var response = await _devQueueService.GetInQueueDevRecord();
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
         }
     }
 }

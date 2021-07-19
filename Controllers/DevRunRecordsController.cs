@@ -20,7 +20,6 @@ namespace ATTM_API.Controllers
         }
 
         [HttpGet]
-        [Authorize]
         public ActionResult<List<DevRunRecord>> Get() =>
             _devRunRecordService.Get();
 
@@ -59,6 +58,22 @@ namespace ATTM_API.Controllers
         public async Task<ActionResult<JObject>> GetLastDevRunRecordsForTestCase(string testCaseId)
         {
             var response = await _devRunRecordService.GetLastDevRunRecordsForTestCase(testCaseId);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+        [Authorize]
+        [HttpGet("getlast/testcase")]
+        public async Task<ActionResult<JObject>> GetAllDevRunRecordsForTestCase()
+        {
+            var response = await _devRunRecordService.GetAllDevRunRecordsForTestCase();
             if (response == null) return StatusCode(500, $"Internal server error.");
             var result = response.GetValue("result").ToString();
             if (result.Equals("success"))
