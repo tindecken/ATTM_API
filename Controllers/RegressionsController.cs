@@ -83,5 +83,21 @@ namespace ATTM_API.Controllers
                 return StatusCode(500, response);
             }
         }
+
+        [HttpGet("{id:length(24)}/getdetail", Name = "GetDetailRegression")]
+        public async Task<ActionResult<JObject>> GetDetailRegression(string id)
+        {
+            var response = await _regressionService.GetDetailRegression(id);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
     }
 }

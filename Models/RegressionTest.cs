@@ -18,7 +18,10 @@ namespace ATTM_API.Models
         public string Build { get; set; }
         public string TestCaseCodeName { get; set; } 
         public string TestCaseName { get; set; } 
-        public string TestCaseFullName { get; set; }
+        public string TestCaseFullCodeName { get; set; }
+        public string TestCaseType { get; set; }
+        public string Description { get; set; }
+        public string Team { get; set; }
         public string CategoryName { get; set; }
         public string TestSuiteFullName { get; set; }
         public string TestGroupFullName { get; set; }
@@ -28,7 +31,8 @@ namespace ATTM_API.Models
         public string Queue { get; set; }
         public string Owner { get; set; }
         public List<string> RegressionRunRecordIds { get; set; }
-        public string AnalyzeBy { get; set; }
+        public RegressionRunRecord LastRegressionRunRecord { get; set; }
+        public string AnalyseBy { get; set; }
         public string Issue { get; set; }
         public string Comment { get; set; }
     }

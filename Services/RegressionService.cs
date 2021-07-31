@@ -124,11 +124,14 @@ namespace ATTM_API.Services
                     TestCaseId = currTestCase.Id,
                     TestCaseCodeName = currTestCase.CodeName,
                     TestCaseName = currTestCase.Name,
-                    TestCaseFullName = $"TestProject.TestCases.{category.Name}.{testsuite.CodeName}.{currTestCase.CodeName}",
+                    TestCaseFullCodeName = $"TestProject.TestCases.{category.Name}.{testsuite.CodeName}.{currTestCase.CodeName}",
+                    TestCaseType =  currTestCase.TestCaseType,
+                    Description =  currTestCase.Description,
+                    Team = currTestCase.Team,
                     CategoryName = category.Name,
                     TestSuiteFullName = $"{testsuite.CodeName}: {testsuite.Name}",
                     TestGroupFullName = $"{testgroup.CodeName}: {testgroup.Name}",
-                    AnalyzeBy = string.Empty,
+                    AnalyseBy = string.Empty,
                     Issue = string.Empty,
                     Comment = string.Empty,
                     IsHighPriority = false,
@@ -235,6 +238,62 @@ namespace ATTM_API.Services
             result.Add("result", "success");
             result.Add("message", $"Added {currRegressionTest.TestCaseCodeName}");
             result.Add("data", JToken.FromObject(currRegressionTest));
+            return result;
+        }
+
+        public async Task<JObject> GetDetailRegression(string regressionId)
+        {
+            // Get regression
+            JObject result = new JObject();
+            var currRegression = await _regressions.Find<Regression>(r => r.Id == regressionId).FirstOrDefaultAsync();
+            if (currRegression == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Not Found Regression with ID: {regressionId}");
+                result.Add("data", null);
+                return result;
+            }
+
+            JArray arrayRegTest = new JArray();
+            // Get all regressionTests
+            foreach (var regTestId in currRegression.RegressionTestIds)
+            {
+                var currRegressionTest = await _regressionTests.Find<RegressionTest>(rt => rt.Id == regTestId)
+                    .FirstOrDefaultAsync();
+                if (currRegressionTest == null)
+                {
+                    result.Add("message", $"Not found RegressionTest for ID: {regTestId}");
+                }
+                else
+                {
+                    // Get last RegressionRunRecordId
+                    var lastRegressionRunRecordId = currRegressionTest.RegressionRunRecordIds.LastOrDefault();
+                    if (!string.IsNullOrEmpty(lastRegressionRunRecordId))
+                    {
+                        //Get RegressionRunRecord
+                        var lastRegRunRecord = await _regresionRunRecords
+                            .Find<RegressionRunRecord>(rrr => rrr.Id == lastRegressionRunRecordId)
+                            .FirstOrDefaultAsync();
+                        if (lastRegRunRecord == null)
+                        {
+
+                        }
+                        else
+                        {
+                            currRegressionTest.LastRegressionRunRecord = lastRegRunRecord;
+                            if (!currRegressionTest.Status.ToUpper().Equals("ANALYSEFAILED")
+                                    && !currRegressionTest.Status.ToUpper().Equals("INQUEUE")
+                                    && !currRegressionTest.Status.ToUpper().Equals("ANALYSEPASSED")
+                                    && !currRegressionTest.Status.ToUpper().Equals("INCOMPATIBLE"))
+                                currRegressionTest.Status = lastRegRunRecord.Status;
+                        }
+                    }
+                    arrayRegTest.Add(JToken.FromObject(currRegressionTest));
+                }
+            }
+            result.Add("result", "success");
+            result.Add("message", $"{arrayRegTest.Count} regression test(s)");
+            result.Add("data",  arrayRegTest);
             return result;
         }
     }

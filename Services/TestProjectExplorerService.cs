@@ -22,11 +22,12 @@ namespace ATTM_API.Services
         {
             JObject result = new JObject();
             JArray arrResult = new JArray();
-            //Assembly assembly = Assembly.LoadFrom(@"c:\dev\ibs_main\QA\QAutomate\RegressionSuite7\bin\Debug\RegressionSuite7.dll");
+            Assembly assembly = Assembly.LoadFrom(@"c:\dev\TM_QA\AutoTool\TM-Console\bin\Debug\AutoBin\RegressionSuite.dll");
             //Assembly assembly = Assembly.LoadFrom(@"c:\dev\ibs_main\QA\QAutomate\APISuite\bin\Debug\APISuite.dll");
-            Assembly assembly = Assembly.LoadFrom(@"C:\dev\ATTM\TestProject\bin\debug\TestProject.dll");
+            //Assembly assembly = Assembly.LoadFrom(@"C:\dev\ATTM\TestProject\bin\debug\TestProject.dll");
             foreach (Type type in assembly.GetTypes())
             {
+                if (!type.Name.Equals("TC_SEPI_2333")) continue;
                 JArray arrTC = new JArray();
                 foreach (MethodInfo methodInfo in type.GetMethods())
                 {
