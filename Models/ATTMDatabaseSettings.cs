@@ -18,6 +18,7 @@ namespace ATTM_API.Models
         string RegressionsCollectionName { get; set; }
         string RegressionTestsCollectionName { get; set; }
         string RegressionRunRecordsCollectionName { get; set; }
+        string SettingsCollectionName { get; set; }
         
     }
     public class ATTMDatabaseSettings : IATTMDatabaseSettings
@@ -39,6 +40,7 @@ namespace ATTM_API.Models
         public string RegressionsCollectionName { get; set; }
         public string RegressionTestsCollectionName { get; set; }
         public string RegressionRunRecordsCollectionName { get; set; }
+        public string SettingsCollectionName { get; set; }
         
     }
 }

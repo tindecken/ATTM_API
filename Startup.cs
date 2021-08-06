@@ -58,6 +58,7 @@ namespace ATTM_API
             services.AddSingleton<RegressionService>();
             services.AddSingleton<RegressionTestService>();
             services.AddSingleton<RegressionRunRecordService>();
+            services.AddSingleton<SettingService>();
             services.AddSingleton<GridFSBucketService>();
             services.AddControllers()
                 .AddNewtonsoftJson(options => options.UseMemberCasing());

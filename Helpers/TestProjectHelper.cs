@@ -334,7 +334,7 @@ namespace ATTM_API.Helpers
                     stringBuilder.AppendLine(@"using TestProject.Framework.CustomAttributes;");
                     stringBuilder.AppendLine(@"using TestProject.Keywords;");
                     stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
-                    stringBuilder.AppendLine(@"using TestProject.Keywords.Saucedemo;");
+                    stringBuilder.AppendLine(@"using TestProject.Keywords.DemoQA;");
                     stringBuilder.AppendLine("");
                     stringBuilder.AppendLine($@"namespace TestProject.TestCases.{category.Name}");
                     stringBuilder.AppendLine(@"{");
@@ -712,7 +712,7 @@ namespace ATTM_API.Helpers
                     stringBuilder.AppendLine(@"using TestProject.Framework.CustomAttributes;");
                     stringBuilder.AppendLine(@"using TestProject.Keywords;");
                     stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
-                    stringBuilder.AppendLine(@"using TestProject.Keywords.Saucedemo;");
+                    stringBuilder.AppendLine(@"using TestProject.Keywords.DemoQA;");
                     stringBuilder.AppendLine("");
                     stringBuilder.AppendLine($@"namespace TestProject.TestCases.{category.Name}");
                     stringBuilder.AppendLine(@"{");
