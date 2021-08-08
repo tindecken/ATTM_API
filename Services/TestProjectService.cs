@@ -28,6 +28,7 @@ namespace ATTM_API.Services
         private readonly IMongoCollection<DevQueue> _devqueues;
         private readonly IMongoCollection<TestClient> _testclients;
         private readonly IMongoCollection<TestCase> _testcases;
+        private readonly IMongoCollection<Setting> _settings;
         private readonly IATTMAppSettings _appSettings;
         public TestProjectService(IATTMAppSettings appSettings, IATTMDatabaseSettings dbSettings)
         {
@@ -41,11 +42,12 @@ namespace ATTM_API.Services
             _testclients = database.GetCollection<TestClient>(dbSettings.TestClientsCollectionName);
             _devqueues = database.GetCollection<DevQueue>(dbSettings.DevQueuesCollectionName);
             _testcases = database.GetCollection<TestCase>(dbSettings.TestCasesCollectionName);
+            _settings = database.GetCollection<Setting>(dbSettings.SettingsCollectionName);
         }
 
         public Task<JObject> GenerateDevCode(List<TestCase> testCases)
         {
-            return TestProjectHelper.GenerateDevCode(testCases, _categories, _testsuites, _testgroups, _testauts);
+            return TestProjectHelper.GenerateDevCode(testCases, _categories, _testsuites, _testgroups, _testauts, _settings);
         }
         public Task<JObject> GenerateRegressionCode(List<RegressionTest> regressionTests)
         {

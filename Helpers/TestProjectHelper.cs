@@ -246,7 +246,7 @@ namespace ATTM_API.Helpers
             }
         }
 
-        public static async Task<JObject> GenerateDevCode(List<TestCase> lstTestCases, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestAUT> testAUTs)
+        public static async Task<JObject> GenerateDevCode(List<TestCase> lstTestCases, IMongoCollection<Category> categories, IMongoCollection<TestSuite> testsuites, IMongoCollection<TestGroup> testgroups, IMongoCollection<TestAUT> testAUTs, IMongoCollection<Setting> settings)
         {
             JObject result = new JObject();
             JArray arrResult = new JArray();
@@ -299,6 +299,18 @@ namespace ATTM_API.Helpers
 
             #region Generate Code
 
+            //Get Import Block
+            var importBlockSetting = await settings.Find(s => s.Name == "ImportBlock" && !s.IsDeleted).FirstOrDefaultAsync();
+            var importBlockValue = string.Empty;
+            if (importBlockSetting == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Not found setting for importBlock");
+                result.Add("data", null);
+                return result;
+            }
+
+            importBlockValue = importBlockSetting.Value;
             var lstSupportBrowser = SupportedBrowsers.Split(",");
 
             List<string> lstDistinctTestSuites = new List<string>();
@@ -327,14 +339,16 @@ namespace ATTM_API.Helpers
                     string tsCodeFile = Path.Combine(TestProject, "TestCases", category.Name, testSuite.CodeName + ".cs");
 
                     StringBuilder stringBuilder = new StringBuilder();
-                    stringBuilder.AppendLine(@"using NUnit.Framework;");
-                    stringBuilder.AppendLine(@"using NUnit.Framework.Internal;");
-                    stringBuilder.AppendLine(@"using System;");
-                    stringBuilder.AppendLine(@"using TestProject.Framework;");
-                    stringBuilder.AppendLine(@"using TestProject.Framework.CustomAttributes;");
-                    stringBuilder.AppendLine(@"using TestProject.Keywords;");
-                    stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
-                    stringBuilder.AppendLine(@"using TestProject.Keywords.DemoQA;");
+                    stringBuilder.AppendLine(importBlockValue);
+                    //stringBuilder.AppendLine(@"using NUnit.Framework.Internal;");
+                    //stringBuilder.AppendLine(@"using System;");
+                    //stringBuilder.AppendLine(@"using TestProject.Framework;");
+                    //stringBuilder.AppendLine(@"using TestProject.Framework.CustomAttributes;");
+                    //stringBuilder.AppendLine(@"using TestProject.Keywords;");
+                    //stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
+                    //stringBuilder.AppendLine(@"using TestProject.Keywords.DemoQA;");
+
+
                     stringBuilder.AppendLine("");
                     stringBuilder.AppendLine($@"namespace TestProject.TestCases.{category.Name}");
                     stringBuilder.AppendLine(@"{");
