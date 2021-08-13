@@ -27,6 +27,7 @@ namespace ATTM_API.Models
         public string TestGroupFullName { get; set; }
         public bool IsHighPriority { get; set; }
         public string Status { get; set; }
+        public string ClientName { get; set; }
         public string WorkItem { get; set; }
         public string Queue { get; set; }
         public string Owner { get; set; }
@@ -34,6 +35,6 @@ namespace ATTM_API.Models
         public RegressionRunRecord LastRegressionRunRecord { get; set; }
         public string AnalyseBy { get; set; }
         public string Issue { get; set; }
-        public string Comment { get; set; }
+        public string Comments { get; set; }
     }
 }

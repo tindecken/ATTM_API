@@ -133,7 +133,7 @@ namespace ATTM_API.Services
                     TestGroupFullName = $"{testgroup.CodeName}: {testgroup.Name}",
                     AnalyseBy = string.Empty,
                     Issue = string.Empty,
-                    Comment = string.Empty,
+                    Comments = string.Empty,
                     IsHighPriority = false,
                     WorkItem = currTestCase.WorkItem,
                     Queue = currTestCase.Queue,

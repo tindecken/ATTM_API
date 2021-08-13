@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ATTM_API.Models.Entities;
 
 namespace ATTM_API.Services
 {
@@ -69,7 +70,7 @@ namespace ATTM_API.Services
                 TestGroupFullName = $"{testgroup.CodeName}: {testgroup.Name}",
                 AnalyseBy = string.Empty,
                 Issue = string.Empty,
-                Comment = string.Empty,
+                Comments = string.Empty,
                 IsHighPriority = false,
                 Queue = testCase.Queue,
                 Owner = testCase.Owner,
@@ -127,6 +128,198 @@ namespace ATTM_API.Services
                 result.Add("message", "test has no running history");
                 return result;
             }
+        }
+        public async Task<JObject> SaveComments(string RegressionTestId, JObject CommentObject)
+        {
+            var CommentBy = CommentObject["CommentBy"];
+            var Comment = CommentObject["Comment"];
+
+            // Get regression test
+            JObject result = new JObject();
+            var currRegressionTest = await _regressionTests.Find<RegressionTest>(regressionTest => regressionTest.Id == RegressionTestId).FirstOrDefaultAsync();
+            if (currRegressionTest == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Not Found RegressionTest with ID: {RegressionTestId}");
+                return result;
+            }
+
+            var updatedComments = $"{currRegressionTest.Comments}\r\n{DateTime.UtcNow.ToString("yyyy MMM dd - HH:mm")} - {CommentBy}: {Comment}";
+            var update = Builders<RegressionTest>.Update.Set(regTest => regTest.Comments, updatedComments);
+            var updated = await _regressionTests.UpdateOneAsync(rt => rt.Id == RegressionTestId, update);
+            if (updated.IsAcknowledged)
+            {
+                var updatedRegressionTest = await _regressionTests.Find<RegressionTest>(regressionTest => regressionTest.Id == RegressionTestId).FirstOrDefaultAsync();
+                result.Add("result", "success");
+                result.Add("data", JToken.FromObject(updatedRegressionTest));
+                result.Add("message", $"Updated comments for Regression Test: {currRegressionTest.TestCaseName}");
+                return result;
+            }
+            else
+            {
+                result.Add("result", "error");
+                result.Add("data", null);
+                result.Add("message", $"Failed to update comments for Regression Test: {currRegressionTest.TestCaseName}");
+                return result;
+            }
+        }
+
+        public async Task<JObject> AddComment(AddCommentData commentData)
+        {
+            // Get regression test
+            JObject result = new JObject();
+            JArray arrResult = new JArray();
+            if (commentData.RegressionTestIds.Count == 0)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"No Regression Test is provided");
+                return result;
+            }
+
+            foreach (var regTestId in commentData.RegressionTestIds)
+            {
+                var currRegressionTest = await _regressionTests.Find<RegressionTest>(regressionTest => regressionTest.Id == regTestId).FirstOrDefaultAsync();
+                if (currRegressionTest == null)
+                {
+                    result.Add("result", "error");
+                    result.Add("message", $"Not Found RegressionTest with ID: {regTestId}");
+                    return result;
+                }
+
+                var updatedComments = $"{currRegressionTest.Comments}\r\n{DateTime.UtcNow.ToString("yyyy MMM dd - HH:mm")} - {commentData.CommentBy}: {commentData.Comment}";
+                var update = Builders<RegressionTest>.Update.Set(regTest => regTest.Comments, updatedComments);
+                var updated = await _regressionTests.UpdateOneAsync(rt => rt.Id == regTestId, update);
+                if (updated.IsAcknowledged)
+                {
+                    var updatedRegressionTest = await _regressionTests.Find<RegressionTest>(regressionTest => regressionTest.Id == regTestId).FirstOrDefaultAsync();
+                    JObject jObject = new JObject();
+                    jObject["TestCase"] = updatedRegressionTest.TestCaseName;
+                    jObject["Id"] = updatedRegressionTest.Id;
+                    jObject["Comments"] = updatedRegressionTest.Comments;
+                    arrResult.Add(jObject);
+                }
+                else
+                {
+                    result.Add("result", "error");
+                    result.Add("data", null);
+                    result.Add("message", $"Failed to update comments for Regression Test: {currRegressionTest.TestCaseName}");
+                    return result;
+                }
+            }
+            result.Add("result", "success");
+            result.Add("count", arrResult.Count);
+            result.Add("data", arrResult);
+            result.Add("message", $"Add Comment for {arrResult.Count} test(s) successful.");
+            return result;
+        }
+
+        public async Task<JObject> setRegressionQueue(SetRegressionQueueData setRegressionQueueData)
+        {
+            // Get regression test
+            JObject result = new JObject();
+            JArray arrResult = new JArray();
+            if (setRegressionQueueData.RegressionTestIds.Count == 0)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"No Regression Test is provided");
+                return result;
+            }
+
+            foreach (var regTestId in setRegressionQueueData.RegressionTestIds)
+            {
+                var currRegressionTest = await _regressionTests.Find<RegressionTest>(regressionTest => regressionTest.Id == regTestId).FirstOrDefaultAsync();
+                if (currRegressionTest == null)
+                {
+                    result.Add("result", "error");
+                    result.Add("message", $"Not Found RegressionTest with ID: {regTestId}");
+                    return result;
+                }
+
+                var updatedComments = $"{currRegressionTest.Comments}\r\n{DateTime.UtcNow.ToString("yyyy MMM dd - HH:mm")} - {setRegressionQueueData.UpdateBy}: Re-run on Client: {setRegressionQueueData.ClientName}, HighPriority: {setRegressionQueueData.IsHighPriority}";
+                var update = Builders<RegressionTest>.Update.Set(regTest => regTest.Status, "InQueue")
+                    .Set(regTest => regTest.IsHighPriority, setRegressionQueueData.IsHighPriority)
+                    .Set(regTest => regTest.ClientName, setRegressionQueueData.ClientName)
+                    .Set(regTest => regTest.Comments, updatedComments);
+                var updated = await _regressionTests.UpdateOneAsync(rt => rt.Id == regTestId, update);
+                if (updated.IsAcknowledged)
+                {
+                    var updatedRegressionTest = await _regressionTests.Find<RegressionTest>(regressionTest => regressionTest.Id == regTestId).FirstOrDefaultAsync();
+                    JObject jObject = new JObject();
+                    jObject["TestCase"] = updatedRegressionTest.TestCaseName;
+                    jObject["Id"] = updatedRegressionTest.Id;
+                    jObject["Status"] = updatedRegressionTest.Status;
+                    jObject["IsHighPriority"] = updatedRegressionTest.IsHighPriority;
+                    jObject["ClientName"] = updatedRegressionTest.ClientName;
+                    jObject["Comments"] = updatedRegressionTest.Comments;
+                    arrResult.Add(jObject);
+                }
+                else
+                {
+                    result.Add("result", "error");
+                    result.Add("data", null);
+                    result.Add("message", $"Failed to update queue for Regression Test: {currRegressionTest.TestCaseName}");
+                    return result;
+                }
+            }
+            result.Add("result", "success");
+            result.Add("count", arrResult.Count);
+            result.Add("data", arrResult);
+            result.Add("message", $"Update queue for {arrResult.Count} test(s) successful.");
+            return result;
+        }
+
+        public async Task<JObject> setRegressionAnalyseStatus(SetRegressionAnalyseStatusData regressionAnalyseStatus)
+        {
+            // Get regression test
+            JObject result = new JObject();
+            JArray arrResult = new JArray();
+            if (regressionAnalyseStatus.RegressionTestIds.Count == 0)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"No Regression Test is provided");
+                return result;
+            }
+
+            foreach (var regTestId in regressionAnalyseStatus.RegressionTestIds)
+            {
+                var currRegressionTest = await _regressionTests.Find<RegressionTest>(regressionTest => regressionTest.Id == regTestId).FirstOrDefaultAsync();
+                if (currRegressionTest == null)
+                {
+                    result.Add("result", "error");
+                    result.Add("message", $"Not Found RegressionTest with ID: {regTestId}");
+                    return result;
+                }
+
+                var updatedComments = $"{currRegressionTest.Comments}\r\n{DateTime.UtcNow.ToString("yyyy MMM dd - HH:mm")} - {regressionAnalyseStatus.AnalyseBy}: Set status: {regressionAnalyseStatus.Status}, reason: {regressionAnalyseStatus.Reason}, issue: {regressionAnalyseStatus.Issue}";
+                var update = Builders<RegressionTest>.Update.Set(regTest => regTest.Status, regressionAnalyseStatus.Status)
+                    .Set(regTest => regTest.AnalyseBy, regressionAnalyseStatus.AnalyseBy)
+                    .Set(regTest => regTest.Comments, updatedComments);
+                var updated = await _regressionTests.UpdateOneAsync(rt => rt.Id == regTestId, update);
+                if (updated.IsAcknowledged)
+                {
+                    var updatedRegressionTest = await _regressionTests.Find<RegressionTest>(regressionTest => regressionTest.Id == regTestId).FirstOrDefaultAsync();
+                    JObject jObject = new JObject();
+                    jObject["TestCase"] = updatedRegressionTest.TestCaseName;
+                    jObject["Id"] = updatedRegressionTest.Id;
+                    jObject["Status"] = updatedRegressionTest.Status;
+                    jObject["Reason"] = regressionAnalyseStatus.Reason;
+                    jObject["Issue"] = regressionAnalyseStatus.Issue;
+                    jObject["Comments"] = updatedRegressionTest.Comments;
+                    arrResult.Add(jObject);
+                }
+                else
+                {
+                    result.Add("result", "error");
+                    result.Add("data", null);
+                    result.Add("message", $"Failed to set status for Regression Test: {currRegressionTest.TestCaseName}");
+                    return result;
+                }
+            }
+            result.Add("result", "success");
+            result.Add("count", arrResult.Count);
+            result.Add("data", arrResult);
+            result.Add("message", $"Update status for {arrResult.Count} test(s) successful.");
+            return result;
         }
     }
 }
