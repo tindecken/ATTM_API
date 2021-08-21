@@ -4,7 +4,10 @@ using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
+using ATTM_API.Models.Entities;
+using Newtonsoft.Json.Linq;
 
 namespace ATTM_API.Services
 {
@@ -43,6 +46,65 @@ namespace ATTM_API.Services
             {
                 throw ex;
             }
+        }
+        public async Task<JObject> DeleteTestCases(string testGroupId, List<string> lstTestCaseIds)
+        {
+            // Get regression test
+            JObject result = new JObject();
+
+            var currentTestGroup = await _testgroups.Find<TestGroup>(tg => tg.Id == testGroupId).FirstOrDefaultAsync();
+
+            if (currentTestGroup == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Not Found TestGroup with ID: {testGroupId}");
+                return result;
+            }
+
+            foreach (var testCaseId in lstTestCaseIds)
+            {
+                var deletedTestCase = await _testcases.FindOneAndDeleteAsync(tc => tc.Id == testCaseId);
+                if (deletedTestCase != null)
+                {
+                    // Update testGroup, remove testCase
+                    int index = currentTestGroup.TestCaseIds.IndexOf(testCaseId);
+                    if (index >= 0)
+                    {
+                        // This is import when using PullFilter
+                        var remoteTestCaseId = new List<string> { testCaseId };
+                        // currentTestGroup.TestCaseIds.RemoveAt(index);
+                        var filter = Builders<TestGroup>.Filter.Eq(tg => tg.Id, testGroupId);
+
+                        //Testing purpose: success
+                        var testGroupUpdate = Builders<TestGroup>.Update.PullFilter(tg => tg.TestCaseIds,
+                            s => remoteTestCaseId.Contains(s));
+
+                        //Testing purpose: error
+                        //var testGroupUpdate = Builders<TestGroup>.Update.PullFilter(tg => tg.TestCaseIds,
+                        //    s => testCaseId.Contains(s));
+                        
+                        await _testgroups.FindOneAndUpdateAsync(filter, testGroupUpdate);
+                    }
+                    else
+                    {
+                        result.Add("result", "error");
+                        result.Add("message", $"Not Found TestCase ID {testCaseId} in TestGroup {currentTestGroup.Name}");
+                        return result;
+                    }
+                }
+                else
+                {
+                    result.Add("result", "error");
+                    result.Add("message", $"Not Found TestCase ID {testCaseId}");
+                    return result;
+                }
+            }
+
+            result.Add("result", "success");
+            result.Add("count", lstTestCaseIds.Count);
+            result.Add("data", null);
+            result.Add("message", $"Delete {lstTestCaseIds.Count} test(s) successful.");
+            return result;
         }
     }
 }

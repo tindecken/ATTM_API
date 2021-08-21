@@ -110,5 +110,75 @@ namespace ATTM_API.Services
 
         public void Remove(string id) => 
             _categories.DeleteOne(category => category.Id == id);
+
+        public async Task<JObject> DeleteTestSuites(string categoryId, List<string> lstTestSuiteIds)
+        {
+            // Get regression test
+            JObject result = new JObject();
+            JArray arrDeleteTestSuite = new JArray();
+            JArray arrDeleteTestGroup = new JArray();
+            JArray arrDeleteTestCase = new JArray();
+            var currentCategory = await _categories.Find<Category>(c => c.Id == categoryId).FirstOrDefaultAsync();
+
+            if (currentCategory == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Not Found Category with ID: {categoryId}");
+                return result;
+            }
+
+            foreach (var testSuiteId in lstTestSuiteIds)
+            {
+                var deletedTestSuite = await _testsuites.FindOneAndDeleteAsync(ts => ts.Id == testSuiteId);
+                if (deletedTestSuite != null)
+                {
+                    arrDeleteTestSuite.Add($"{deletedTestSuite.CodeName}: {deletedTestSuite.Name}");
+
+                    foreach (var testGroupId in deletedTestSuite.TestGroupIds)
+                    {
+                        var deleteTestGroup = await _testgroups.FindOneAndDeleteAsync(tg => tg.Id == testGroupId);
+                        if (deleteTestGroup != null)
+                        {
+                            arrDeleteTestGroup.Add($"{deleteTestGroup.CodeName}: {deleteTestGroup.Name}");
+                            foreach (var testCaseId in deleteTestGroup.TestCaseIds)
+                            {
+                                var deleteTestCase = await _testcases.FindOneAndDeleteAsync(tc => tc.Id == testCaseId);
+                                if (deleteTestCase != null) arrDeleteTestCase.Add($"{deleteTestCase.CodeName}: {deleteTestCase.Name}");
+                            }
+                        }
+                    }
+
+                    int index = currentCategory.TestSuiteIds.IndexOf(testSuiteId);
+                    if (index >= 0)
+                    {
+                        currentCategory.TestSuiteIds.RemoveAt(index);
+                        var categoryUpdate = Builders<Category>.Update
+                            .Set(c => c.TestSuiteIds, currentCategory.TestSuiteIds);
+                        await _categories.FindOneAndUpdateAsync(c => c.Id == currentCategory.Id, categoryUpdate);
+                    }
+                    else
+                    {
+                        result.Add("result", "error");
+                        result.Add("message", $"Not Found TestSuite ID {testSuiteId} in Category {currentCategory.Name}");
+                        return result;
+                    }
+                }
+                else
+                {
+                    result.Add("result", "error");
+                    result.Add("message", $"Not Found TestSuite ID {testSuiteId}");
+                    return result;
+                }
+            }
+
+            result.Add("result", "success");
+            result.Add("count", lstTestSuiteIds.Count);
+            result.Add("data", null);
+            result.Add("message", $"Delete {arrDeleteTestSuite.Count} testSuite(s), {arrDeleteTestGroup.Count} testGroup(s), {arrDeleteTestCase.Count} testCase(s) successful.");
+            result.Add("deleteTestSuites", arrDeleteTestSuite);
+            result.Add("deleteTestGroups", arrDeleteTestGroup);
+            result.Add("deleteTestCases", arrDeleteTestCase);
+            return result;
+        }
     }
 }

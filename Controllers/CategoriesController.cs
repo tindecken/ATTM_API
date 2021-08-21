@@ -94,5 +94,22 @@ namespace ATTM_API.Controllers
 
             return NoContent();
         }
+
+        [HttpPost("{categoryId:length(24)}/testsuites/delete")]
+        [Authorize]
+        public async Task<ActionResult<JObject>> DeleteTestSuites(string categoryId, [FromBody] List<string> lstTestSuiteIds)
+        {
+            var response = await _categoryService.DeleteTestSuites(categoryId, lstTestSuiteIds);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
     }
 }

@@ -3,6 +3,7 @@ using ATTM_API.Services;
 using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace ATTM_API.Controllers
 {
@@ -45,6 +46,23 @@ namespace ATTM_API.Controllers
             else
             {
                 return StatusCode(409, $"TestGroup '{testGroup.Name}' already exists.");
+            }
+        }
+
+        [HttpPost("{testSuiteId:length(24)}/testgroups/delete")]
+        [Authorize]
+        public async Task<ActionResult<JObject>> DeleteTestGroups(string testSuiteId, [FromBody] List<string> lstTestGroupIds)
+        {
+            var response = await _testSuiteService.DeleteTestGroups(testSuiteId, lstTestGroupIds);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
             }
         }
     }

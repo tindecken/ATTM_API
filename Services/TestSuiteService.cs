@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Newtonsoft.Json.Linq;
 
 namespace ATTM_API.Services
 {
@@ -12,6 +13,7 @@ namespace ATTM_API.Services
     {
         private readonly IMongoCollection<TestSuite> _testsuites;
         private readonly IMongoCollection<TestGroup> _testgroups;
+        private readonly IMongoCollection<TestCase> _testcases;
 
         public TestSuiteService(IATTMDatabaseSettings settings)
         {
@@ -19,6 +21,7 @@ namespace ATTM_API.Services
             var database = client.GetDatabase(settings.DatabaseName);
             _testsuites = database.GetCollection<TestSuite>(settings.TestSuitesCollectionName);
             _testgroups = database.GetCollection<TestGroup>(settings.TestGroupsCollectionName);
+            _testcases = database.GetCollection<TestCase>(settings.TestCasesCollectionName);
         }
 
         public async Task<List<TestSuite>> Get() =>
@@ -42,6 +45,70 @@ namespace ATTM_API.Services
             {
                 throw ex;
             }
+        }
+
+        public async Task<JObject> DeleteTestGroups(string testSuiteId, List<string> lstTestGroupIds)
+        {
+            // Get regression test
+            JObject result = new JObject();
+            JArray arrDeletedTestGroups = new JArray();
+            JArray arrDeletedTestCases = new JArray();
+            var currentTestSuite = await _testsuites.Find<TestSuite>(ts => ts.Id == testSuiteId).FirstOrDefaultAsync();
+
+            if (currentTestSuite == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Not Found TestSuite with ID: {testSuiteId}");
+                return result;
+            }
+
+            foreach (var testGroupId in lstTestGroupIds)
+            {
+                var deletedTestGroup = await _testgroups.FindOneAndDeleteAsync(tg => tg.Id == testGroupId);
+                if (deletedTestGroup != null)
+                {
+                    arrDeletedTestGroups.Add($"{deletedTestGroup.CodeName}: {deletedTestGroup.Name}");
+                    // Delete all testCase of testGroup
+                    foreach (var testCaseId in deletedTestGroup.TestCaseIds)
+                    {
+                        var deletedTestCase = await _testcases.FindOneAndDeleteAsync(tc => tc.Id == testCaseId);
+                        if (deletedTestCase != null)
+                        {
+                            arrDeletedTestCases.Add($"{deletedTestCase.CodeName}: {deletedTestCase.Name}");
+                        }
+                    }
+
+                    // Update TestSuite, remove testGroup
+                    int index = currentTestSuite.TestGroupIds.IndexOf(testGroupId);
+                    if (index >= 0)
+                    {
+                        currentTestSuite.TestGroupIds.RemoveAt(index);
+                        var testSuiteUpdate = Builders<TestSuite>.Update
+                            .Set(ts => ts.TestGroupIds, currentTestSuite.TestGroupIds);
+                        await _testsuites.FindOneAndUpdateAsync(g => g.Id == currentTestSuite.Id, testSuiteUpdate);
+                    }
+                    else
+                    {
+                        result.Add("result", "error");
+                        result.Add("message", $"Not Found TestGroup ID {testGroupId} in TestSuite {currentTestSuite.Name}");
+                        return result;
+                    }
+                }
+                else
+                {
+                    result.Add("result", "error");
+                    result.Add("message", $"Not Found TestGroup ID {testGroupId}");
+                    return result;
+                }
+            }
+
+            result.Add("result", "success");
+            result.Add("count", arrDeletedTestGroups.Count);
+            result.Add("data", null);
+            result.Add("message", $"Delete {arrDeletedTestGroups.Count} testGroup(s), {arrDeletedTestCases.Count} testCases(s) successful.");
+            result.Add("deletedTestGroups", arrDeletedTestGroups);
+            result.Add("deletedTestCases", arrDeletedTestCases);
+            return result;
         }
     }
 }
