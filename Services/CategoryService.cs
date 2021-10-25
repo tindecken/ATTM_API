@@ -180,5 +180,81 @@ namespace ATTM_API.Services
             result.Add("deleteTestCases", arrDeleteTestCase);
             return result;
         }
+        public async Task<JObject> DeleteCategory(string categoryId)
+        {
+            var categoryName = string.Empty;
+            // Get regression test
+            JObject result = new JObject();
+            JArray arrDeleteTestSuite = new JArray();
+            JArray arrDeleteTestGroup = new JArray();
+            JArray arrDeleteTestCase = new JArray();
+            var deletedCategory = await _categories.FindOneAndDeleteAsync<Category>(c => c.Id == categoryId);
+
+            if (deletedCategory == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Can't delete category with ID: {categoryId}");
+                return result;
+            }
+
+            categoryName = deletedCategory.Name;
+            foreach (var testSuiteId in deletedCategory.TestSuiteIds)
+            {
+                var deletedTestSuite = await _testsuites.FindOneAndDeleteAsync(ts => ts.Id == testSuiteId);
+                if (deletedTestSuite != null)
+                {
+                    arrDeleteTestSuite.Add($"{deletedTestSuite.CodeName}: {deletedTestSuite.Name}");
+
+                    foreach (var testGroupId in deletedTestSuite.TestGroupIds)
+                    {
+                        var deleteTestGroup = await _testgroups.FindOneAndDeleteAsync(tg => tg.Id == testGroupId);
+                        if (deleteTestGroup != null)
+                        {
+                            arrDeleteTestGroup.Add($"{deleteTestGroup.CodeName}: {deleteTestGroup.Name}");
+                            foreach (var testCaseId in deleteTestGroup.TestCaseIds)
+                            {
+                                var deleteTestCase = await _testcases.FindOneAndDeleteAsync(tc => tc.Id == testCaseId);
+                                if (deleteTestCase != null) arrDeleteTestCase.Add($"{deleteTestCase.CodeName}: {deleteTestCase.Name}");
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    result.Add("result", "error");
+                    result.Add("message", $"Not Found TestSuite ID {testSuiteId}");
+                    return result;
+                }
+            }
+
+            result.Add("result", "success");
+            result.Add("count", arrDeleteTestSuite.Count);
+            result.Add("data", null);
+            result.Add("message", $"Delete Category {categoryName}, {arrDeleteTestSuite.Count} testSuite(s), {arrDeleteTestGroup.Count} testGroup(s), {arrDeleteTestCase.Count} testCase(s) successful.");
+            result.Add("deleteTestSuites", arrDeleteTestSuite);
+            result.Add("deleteTestGroups", arrDeleteTestGroup);
+            result.Add("deleteTestCases", arrDeleteTestCase);
+            return result;
+        }
+        public async Task<JObject> CreateCategory(Category category)
+        {
+            JObject result = new JObject();
+            var existingCat = await _categories.Find<Category>(cat => cat.Name == category.Name).FirstOrDefaultAsync();
+            if (existingCat == null)
+            {
+                await _categories.InsertOneAsync(category);
+                result.Add("result", "success");
+                result.Add("count", 1);
+                result.Add("data", JToken.FromObject(category));
+                result.Add("message", $"Created category {category.Name}");
+            }
+            else
+            {
+                result.Add("result", "error");
+                result.Add("data", null);
+                result.Add("message", $"Category {category.Name} is already exist.");
+            }
+            return result;
+        }
     }
 }

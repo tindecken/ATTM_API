@@ -33,7 +33,6 @@ namespace ATTM_API
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddCors();
             // requires using Microsoft.Extensions.Options
             services.Configure<ATTMDatabaseSettings>(Configuration.GetSection(nameof(ATTMDatabaseSettings)));
             services.AddSingleton<IATTMDatabaseSettings>(sp =>
@@ -41,7 +40,6 @@ namespace ATTM_API
             services.Configure<ATTMAppSettings>(Configuration.GetSection(nameof(ATTMAppSettings)));
             services.AddSingleton<IATTMAppSettings>(appSP =>
                 appSP.GetRequiredService<IOptions<ATTMAppSettings>>().Value);
-
             services.AddSingleton<CategoryService>();
             services.AddSingleton<TestSuiteService>();
             services.AddSingleton<TestGroupService>();
@@ -60,6 +58,7 @@ namespace ATTM_API
             services.AddSingleton<RegressionRunRecordService>();
             services.AddSingleton<SettingService>();
             services.AddSingleton<GridFSBucketService>();
+            services.AddCors();
             services.AddControllers()
                 .AddNewtonsoftJson(options => options.UseMemberCasing());
             services.AddControllers();
@@ -98,9 +97,10 @@ namespace ATTM_API
             app.UseRouting();
 
             // global cors policy
-            app.UseCors(x => x.WithOrigins("http://localhost:8080")
+            app.UseCors(x => x
                 .AllowAnyMethod()
                 .AllowAnyHeader()
+                .SetIsOriginAllowed(original => true)
                 .AllowCredentials());
             // custom jwt auth middleware
             app.UseMiddleware<JwtMiddleware>();

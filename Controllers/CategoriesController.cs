@@ -111,5 +111,38 @@ namespace ATTM_API.Controllers
                 return StatusCode(500, response);
             }
         }
+        [HttpPost("delete")]
+        [Authorize]
+        public async Task<ActionResult<JObject>> DeleteCategory([FromBody] string categoryId)
+        {
+            var response = await _categoryService.DeleteCategory(categoryId);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+
+        [HttpPost("create")]
+        [Authorize]
+        public async Task<ActionResult<JObject>> CreateCategory([FromBody] Category category)
+        {
+            var response = await _categoryService.CreateCategory(category);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
     }
 }
