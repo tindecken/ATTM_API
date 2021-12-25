@@ -9,16 +9,15 @@ try {
 	$Password = ConvertTo-SecureString $Password -AsPlainText -Force
 	$mycreds = New-Object System.Management.Automation.PSCredential($UserName, $Password)
 
-	New-PSDrive -Name L -PSProvider FileSystem -Root \\$IPAddress\c$\$DestFolder -Credential $mycreds -Persist -ErrorAction Stop
-	Copy-Item -Path $SourceFolder\* -Destination "L:\" -Recurse -PassThru -Force -ErrorAction Stop
+	$session = New-PSSession -ComputerName $IPAddress -Credential $mycreds
+
+	Copy-Item -Path $SourceFolder\* -Destination $DestFolder -ToSession $session -Recurse -PassThru -Force -ErrorAction Stop
 }
 catch {
-	Write-Host "An error occurred:"
+	Write-Host "An error occurred while copying:"
 	Write-Host $_
 	exit 1
 }
 finally {
-	Remove-PSDrive -Name L -ErrorAction Stop
+	
 }
-
-

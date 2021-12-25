@@ -340,14 +340,6 @@ namespace ATTM_API.Helpers
 
                     StringBuilder stringBuilder = new StringBuilder();
                     stringBuilder.AppendLine(importBlockValue);
-                    //stringBuilder.AppendLine(@"using NUnit.Framework.Internal;");
-                    //stringBuilder.AppendLine(@"using System;");
-                    //stringBuilder.AppendLine(@"using TestProject.Framework;");
-                    //stringBuilder.AppendLine(@"using TestProject.Framework.CustomAttributes;");
-                    //stringBuilder.AppendLine(@"using TestProject.Keywords;");
-                    //stringBuilder.AppendLine(@"using TestProject.Framework.WrapperFactory;");
-                    //stringBuilder.AppendLine(@"using TestProject.Keywords.DemoQA;");
-
 
                     stringBuilder.AppendLine("");
                     stringBuilder.AppendLine($@"namespace TestProject.TestCases.{category.Name}");
@@ -410,7 +402,7 @@ namespace ATTM_API.Helpers
                         }
                         stringBuilder.AppendLine($"\t\t[WorkItem(\"{tc.WorkItem}\")]");
                         stringBuilder.AppendLine($"\t\t// {tc.Name}");
-                        stringBuilder.AppendLine($"\t\tpublic void {tc.CodeName}()");
+                        stringBuilder.AppendLine($"\t\tpublic void {FirstLetterToUpper(tc.CodeName)}()");
                         stringBuilder.AppendLine("\t\t{");
 
 
@@ -681,6 +673,7 @@ namespace ATTM_API.Helpers
                     Owner = tmpTestCase.Owner,
                     Team = tmpTestCase.Team,
                     Queue = tmpTestCase.Queue,
+                    DontRunWithQueues = tmpTestCase.DontRunWithQueues,
                     CreatedDate = tmpTestCase.CreatedDate,
                     LastModifiedDate =  tmpTestCase.LastModifiedDate,
                     LastModifiedUser = tmpTestCase.LastModifiedUser,
@@ -788,7 +781,7 @@ namespace ATTM_API.Helpers
                         }
                         stringBuilder.AppendLine($"\t\t[WorkItem(\"{tc.WorkItem}\")]");
                         stringBuilder.AppendLine($"\t\t// {tc.Name}");
-                        stringBuilder.AppendLine($"\t\tpublic void {tc.CodeName}()");
+                        stringBuilder.AppendLine($"\t\tpublic void {FirstLetterToUpper(tc.CodeName)}()");
                         stringBuilder.AppendLine("\t\t{");
 
 
@@ -1097,7 +1090,7 @@ namespace ATTM_API.Helpers
             StringBuilder sbBuilder = new StringBuilder();
             Logger.Info("-- Start Copy Code to Client");
             ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = "powershell.exe";
+            startInfo.FileName = "pwsh.exe";
             startInfo.Arguments = $@"-NoProfile -ExecutionPolicy unrestricted {Path.Combine(Path.GetDirectoryName(sRootDLL), "Helpers", "copyFiles.ps1")} {testClient.IPAddress} {testClient.User} {testClient.Password} {appSettings.BuiltSource} {testClient.RegressionFolder}";
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
@@ -1152,6 +1145,16 @@ namespace ATTM_API.Helpers
             result.Add("message", sbBuilder.ToString());
 
             return result;
+        }
+        private static string FirstLetterToUpper(string str)
+        {
+            if (str == null)
+                return null;
+
+            if (str.Length > 1)
+                return char.ToUpper(str[0]) + str.Substring(1);
+
+            return str.ToUpper();
         }
     }
 

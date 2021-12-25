@@ -30,6 +30,7 @@ namespace ATTM_API.Models
         public string ClientName { get; set; }
         public string WorkItem { get; set; }
         public string Queue { get; set; }
+        public List<string> DontRunWithQueues { get; set; }
         public string Owner { get; set; }
         public List<string> RegressionRunRecordIds { get; set; }
         public RegressionRunRecord LastRegressionRunRecord { get; set; }

@@ -27,10 +27,11 @@ namespace ATTM_API.Models
         public string Owner { get; set; }
         public string Team { get; set; }
         public string Queue { get; set; }
+        public List<string> DontRunWithQueues { get; set; }
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
         public DateTime LastModifiedDate { get; set; } = DateTime.UtcNow;
         
-        public User LastModifiedUser { get; set; }
+        public string LastModifiedUser { get; set; }
         public string Description { get; set; } = string.Empty;
         public int TimeOutInMinutes { get; set; } = 60;
         public TestCase DependOn { get; set; }

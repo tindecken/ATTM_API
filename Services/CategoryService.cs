@@ -85,9 +85,12 @@ namespace ATTM_API.Services
                         foreach (var tcId in tg.TestCaseIds)
                         {
                             JObject tcObject = new JObject();
-                            var tc = await _testcases.Find<TestCase>(t => t.Id == tcId).FirstOrDefaultAsync();
-                            tcObject = (JObject)JToken.FromObject(tc);
-                            arrTC.Add(tcObject);
+                            var tc = await _testcases.Find<TestCase>(t => t.Id == tcId && t.IsDeleted == false).FirstOrDefaultAsync();
+                            if (tc != null)
+                            {
+                                tcObject = (JObject)JToken.FromObject(tc);
+                                arrTC.Add(tcObject);
+                            }
                         }
                         tgObject["children"] = arrTC;
                         arrTG.Add(tgObject);

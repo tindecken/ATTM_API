@@ -71,7 +71,9 @@ namespace ATTM_API.Services
                     // Delete all testCase of testGroup
                     foreach (var testCaseId in deletedTestGroup.TestCaseIds)
                     {
-                        var deletedTestCase = await _testcases.FindOneAndDeleteAsync(tc => tc.Id == testCaseId);
+                        var filterDef = Builders<TestCase>.Filter.Eq(tc => tc.Id, testCaseId);
+                        var updateDef = Builders<TestCase>.Update.Set(tc => tc.IsDeleted, true);
+                        var deletedTestCase = await _testcases.FindOneAndUpdateAsync(filterDef, updateDef);
                         if (deletedTestCase != null)
                         {
                             arrDeletedTestCases.Add($"{deletedTestCase.CodeName}: {deletedTestCase.Name}");

@@ -137,6 +137,7 @@ namespace ATTM_API.Services
                     IsHighPriority = false,
                     WorkItem = currTestCase.WorkItem,
                     Queue = currTestCase.Queue,
+                    DontRunWithQueues = currTestCase.DontRunWithQueues,
                     Owner = currTestCase.Owner ?? string.Empty,
                     Status = "InQueue",
                     Regression = currentRegression.Name,

@@ -73,6 +73,7 @@ namespace ATTM_API.Services
                 Comments = string.Empty,
                 IsHighPriority = false,
                 Queue = testCase.Queue,
+                DontRunWithQueues = testCase.DontRunWithQueues,
                 Owner = testCase.Owner,
                 Status = "InQueue",
             };

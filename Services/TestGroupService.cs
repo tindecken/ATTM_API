@@ -51,7 +51,7 @@ namespace ATTM_API.Services
         {
             // Get regression test
             JObject result = new JObject();
-
+            int count = 0;
             var currentTestGroup = await _testgroups.Find<TestGroup>(tg => tg.Id == testGroupId).FirstOrDefaultAsync();
 
             if (currentTestGroup == null)
@@ -63,9 +63,12 @@ namespace ATTM_API.Services
 
             foreach (var testCaseId in lstTestCaseIds)
             {
-                var deletedTestCase = await _testcases.FindOneAndDeleteAsync(tc => tc.Id == testCaseId);
+                var filterDef = Builders<TestCase>.Filter.Eq(tc => tc.Id, testCaseId);
+                var updateDef = Builders<TestCase>.Update.Set(tc => tc.IsDeleted, true);
+                var deletedTestCase = await _testcases.FindOneAndUpdateAsync(filterDef, updateDef);
                 if (deletedTestCase != null)
                 {
+                    count++;
                     // Update testGroup, remove testCase
                     int index = currentTestGroup.TestCaseIds.IndexOf(testCaseId);
                     if (index >= 0)
@@ -101,9 +104,9 @@ namespace ATTM_API.Services
             }
 
             result.Add("result", "success");
-            result.Add("count", lstTestCaseIds.Count);
+            result.Add("count", count);
             result.Add("data", null);
-            result.Add("message", $"Delete {lstTestCaseIds.Count} test(s) successful.");
+            result.Add("message", $"Delete {count} test(s) successful.");
             return result;
         }
     }
