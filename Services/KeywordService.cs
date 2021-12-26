@@ -49,5 +49,10 @@ namespace ATTM_API.Services
             JObject kw = JObject.Parse(File.ReadAllText(sKeywordListFile));
             return kw;
         }
+
+        public async Task<JObject> GetKeywords()
+        {
+            return TestProjectHelper.GetKeywordsJson();
+        }
     }
 }

@@ -28,5 +28,22 @@ namespace ATTM_API.Controllers
         public async Task<JObject> Refresh() {
             return await _keywordService.RefreshAsync();
         }
+
+        [HttpGet("getkeywords")]
+        [Authorize]
+        public async Task<ActionResult<JObject>> GetKeywords()
+        {
+            var response = await _keywordService.GetKeywords();
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
     }
 }
