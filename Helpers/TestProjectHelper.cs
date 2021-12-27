@@ -24,14 +24,15 @@ namespace ATTM_API.Helpers
     
     public class TestProjectHelper
     {
+
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
         private static string sRootDLL = System.Reflection.Assembly.GetExecutingAssembly().Location;
         public static string sRootPath = Path.GetDirectoryName(sRootDLL);
         private static DirectoryInfo drInfoRoot = new DirectoryInfo(sRootPath);
-        public static string sProjectPath = drInfoRoot.Parent.Parent.Parent.Parent.FullName;
-        public static string sTestCasesFolder = Path.Combine(sProjectPath, "TestProject", "TestCases");
-        public static string sTestProjectcsproj = Path.Combine(sProjectPath, "TestProject", "TestProject.csproj");
-        public static string sKeyWordsFolder = Path.Combine(sProjectPath, "TestProject", "Keywords");
+        public static string sProjectPath = Startup.StaticConfig.GetValue<string>("ATTMAppSettings:TestProject");
+        public static string sTestCasesFolder = Path.Combine(sProjectPath, "TestCases");
+        public static string sTestProjectcsproj = Path.Combine(sProjectPath, "TestProject.csproj");
+        public static string sKeyWordsFolder = Path.Combine(sProjectPath, "Keywords");
         public static string sKeywordListFile = Path.Combine(Path.GetTempPath(), "Keyword.json");
 
         public static string sPatternStartSummary = "/// <summary>";
