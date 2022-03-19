@@ -63,42 +63,46 @@ namespace ATTM_API.Services
 
             foreach (var testCaseId in lstTestCaseIds)
             {
+                
                 var filterDef = Builders<TestCase>.Filter.Eq(tc => tc.Id, testCaseId);
-                var updateDef = Builders<TestCase>.Update.Set(tc => tc.IsDeleted, true);
-                var deletedTestCase = await _testcases.FindOneAndUpdateAsync(filterDef, updateDef);
-                if (deletedTestCase != null)
+                var existingTC = await _testcases.Find(filterDef).FirstAsync();
+                if (existingTC == null)
                 {
-                    count++;
-                    // Update testGroup, remove testCase
-                    int index = currentTestGroup.TestCaseIds.IndexOf(testCaseId);
-                    if (index >= 0)
-                    {
-                        // This is import when using PullFilter
-                        var remoteTestCaseId = new List<string> { testCaseId };
-                        // currentTestGroup.TestCaseIds.RemoveAt(index);
-                        var filter = Builders<TestGroup>.Filter.Eq(tg => tg.Id, testGroupId);
+                    result.Add("result", "error");
+                    result.Add("message", $"Not Found TestCase ID {testCaseId}");
+                    return result;
+                }
 
-                        //Testing purpose: success
-                        var testGroupUpdate = Builders<TestGroup>.Update.PullFilter(tg => tg.TestCaseIds,
-                            s => remoteTestCaseId.Contains(s));
 
-                        //Testing purpose: error
-                        //var testGroupUpdate = Builders<TestGroup>.Update.PullFilter(tg => tg.TestCaseIds,
-                        //    s => testCaseId.Contains(s));
-                        
-                        await _testgroups.FindOneAndUpdateAsync(filter, testGroupUpdate);
-                    }
-                    else
-                    {
-                        result.Add("result", "error");
-                        result.Add("message", $"Not Found TestCase ID {testCaseId} in TestGroup {currentTestGroup.Name}");
-                        return result;
-                    }
+                var updateDef = Builders<TestCase>.Update
+                    .Set(tc => tc.IsDeleted, true)
+                    .Set(tc => tc.CodeName, $"{existingTC.CodeName}_deleted")
+                    .Set(tc => tc.Name, $"{existingTC.Name}_deleted");
+                var deletedTestCase = await _testcases.FindOneAndUpdateAsync(filterDef, updateDef);
+                count++;
+                // Update testGroup, remove testCase
+                int index = currentTestGroup.TestCaseIds.IndexOf(testCaseId);
+                if (index >= 0)
+                {
+                    // This is import when using PullFilter
+                    var remoteTestCaseId = new List<string> { testCaseId };
+                    // currentTestGroup.TestCaseIds.RemoveAt(index);
+                    var filter = Builders<TestGroup>.Filter.Eq(tg => tg.Id, testGroupId);
+
+                    //Testing purpose: success
+                    var testGroupUpdate = Builders<TestGroup>.Update.PullFilter(tg => tg.TestCaseIds,
+                        s => remoteTestCaseId.Contains(s));
+
+                    //Testing purpose: error
+                    //var testGroupUpdate = Builders<TestGroup>.Update.PullFilter(tg => tg.TestCaseIds,
+                    //    s => testCaseId.Contains(s));
+
+                    await _testgroups.FindOneAndUpdateAsync(filter, testGroupUpdate);
                 }
                 else
                 {
                     result.Add("result", "error");
-                    result.Add("message", $"Not Found TestCase ID {testCaseId}");
+                    result.Add("message", $"Not Found TestCase ID {testCaseId} in TestGroup {currentTestGroup.Name}");
                     return result;
                 }
             }

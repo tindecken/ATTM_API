@@ -582,7 +582,7 @@ namespace ATTM_API.Helpers
                         List<TestAUT> lstDistinctAUTs = new List<TestAUT>();
                         foreach (TestStep ts in tc.TestSteps)
                         {
-                            if (ts.Keyword == null) continue;
+                            if (ts.Keyword == null) continue; // Empty test step
                             if (string.IsNullOrEmpty(ts.Keyword.Name)) continue;
                             if (ts.IsDisabled || ts.IsDisabled || ts.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
                             bool containsItem = lstDistinctAUTIds.Any(item => item.ToUpper().Equals(ts.TestAUTId.ToUpper()));
@@ -620,23 +620,25 @@ namespace ATTM_API.Helpers
                         List<TestStep> lstDistinctTestSteps = new List<TestStep>();
                         foreach (var testStep in tc.TestSteps)
                         {
+                            if (testStep.Keyword == null) continue; // Empty test step
                             if (testStep.IsDisabled || testStep.IsComment || testStep.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
                             bool containsItem = lstDistinctTestSteps.Any(item => item.KWFeature == testStep.KWFeature && item.TestAUTId == testStep.TestAUTId);
                             if (!containsItem) lstDistinctTestSteps.Add(testStep);
                         }
 
-                        foreach (TestStep ts in lstDistinctTestSteps)
+                        foreach (TestStep testStep in lstDistinctTestSteps)
                         {
-                            TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == ts.TestAUTId).FirstOrDefaultAsync();
+                            if (testStep.Keyword == null) continue; // Empty test step
+                            TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == testStep.TestAUTId).FirstOrDefaultAsync();
                             if (lstSupportBrowser.Contains(aut.Name))
                             {
-                                stringBuilder.Append($"\t\t\t{ts.KWFeature} {aut.Name}_{ts.KWFeature} = new {ts.KWFeature}(WebDriverFactory.Driver");
+                                stringBuilder.Append($"\t\t\t{testStep.KWFeature} {aut.Name}_{testStep.KWFeature} = new {testStep.KWFeature}(WebDriverFactory.Driver");
                                 stringBuilder.Append($"{aut.Name.Substring(aut.Name.Length - 1)}");
                                 stringBuilder.AppendLine(");");
                             }
                             else
                             {
-                                stringBuilder.AppendLine($"\t\t\t{ts.KWFeature} {aut.Name}_{ts.KWFeature} = new {ts.KWFeature}();");
+                                stringBuilder.AppendLine($"\t\t\t{testStep.KWFeature} {aut.Name}_{testStep.KWFeature} = new {testStep.KWFeature}();");
                             }
                         }
 
@@ -647,14 +649,15 @@ namespace ATTM_API.Helpers
                         StringBuilder sBuilderKeywords = new StringBuilder();
 
                         //index of CleanUp Keyword
-                        int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Keyword.Name.ToUpper().Equals("CLEANUP"));
+                        int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Keyword != null && ts.Keyword.Name.ToUpper().Equals("CLEANUP"));
                         Logger.Info(indexCleanUp == -1
                             ? $"Test case [{tc.Name}] has no CleanUp step"
                             : $"Test case [{tc.Name}] - CleanUp at index: {indexCleanUp}");
-                        //I do hardcoded indexCleanUp in case of user doesn't use CleanUp in the test case
+                        //Hardcoded indexCleanUp in case of user doesn't use CleanUp in the test case
                         if (indexCleanUp == -1) indexCleanUp = int.MaxValue;
                         for (int i = 0; i < tc.TestSteps.Count; i++)
                         {
+                            if (tc.TestSteps[i].Keyword == null) continue; // Empty test step
                             if (tc.TestSteps[i].Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
                             // BEFORE CLEANUP
                             if (i < indexCleanUp)
@@ -1285,21 +1288,84 @@ namespace ATTM_API.Helpers
             return result;
         }
 
-        public static async Task<JObject> CopyCodeToClient(TestClient testClient, IATTMAppSettings appSettings)
+        public static async Task<JObject> CopyCodeToClient(TestClient testClient, string type, IATTMAppSettings appSettings)
         {
             JObject result = new JObject();
+            var sourceDir = appSettings.BuiltSource;
+            var destDir = string.Empty;
+            switch (type.ToLower())
+            {
+                case "dev":
+                    destDir = $@"\\{testClient.IPAddress}\{testClient.DevelopFolder}";
+                    break;
+                case "develop":
+                    destDir = $@"\\{testClient.IPAddress}\{testClient.DevelopFolder}";
+                    break;
+                case "reg":
+                    destDir = $@"\\{testClient.IPAddress}\{testClient.RegressionFolder}";
+                    break;
+                case "regression":
+                    destDir = $@"\\{testClient.IPAddress}\{testClient.RegressionFolder}";
+                    break;
+                default:
+                    result.Add("result", "error");
+                    result.Add("message", $"type should be dev, reg, or regression, your input is: {type}");
+                    return result;
+            }
+            try
+            {
+                if (Directory.Exists(destDir))
+                {
+                    Directory.Delete(destDir, true);
+                }
+
+                Directory.CreateDirectory(destDir);
+
+                foreach (var innerDir in Directory.GetDirectories(sourceDir, "*.*", SearchOption.AllDirectories))
+                {
+                    Directory.CreateDirectory(innerDir.Replace(sourceDir, destDir));
+                }
+
+                foreach (var file in Directory.GetFiles(sourceDir, "*.*", SearchOption.AllDirectories))
+                {
+                    File.Copy(file, file.Replace(sourceDir, destDir), true);
+                }
+            }
+            catch (Exception e)
+            {
+                result.Add("result", "error");
+                result.Add("message", e.Message);
+                return result;
+            }
+            
+            result.Add("result", "success");
+            result.Add("message", $"Copied to client in ${destDir} !");
+            return result;
+        }
+
+        public static async Task<JObject> RunAutoRunner(TestClient testClient, IATTMAppSettings appSettings)
+        {
+            JObject result = new JObject();
+
             int intExitCode;
             StringBuilder sbBuilder = new StringBuilder();
-            Logger.Info("-- Start Copy Code to Client");
             ProcessStartInfo startInfo = new ProcessStartInfo();
-            startInfo.FileName = "pwsh.exe";
-            startInfo.Arguments = $@"-NoProfile -ExecutionPolicy unrestricted {Path.Combine(Path.GetDirectoryName(sRootDLL), "Helpers", "copyFiles.ps1")} {testClient.IPAddress} {testClient.User} {testClient.Password} {appSettings.BuiltSource} {testClient.RegressionFolder}";
+            startInfo.WorkingDirectory = appSettings.PSToolsFolder;
+            startInfo.FileName = @"C:\pstools\psexec.exe";
+            startInfo.Arguments = $@"\\{testClient.IPAddress} -accepteula -nobanner -u {testClient.User} -p {testClient.Password} -i 2 -d {testClient.RunnerFolder}";
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
-            
+            startInfo.RedirectStandardError = true;
+
             using (Process process = Process.Start(startInfo))
             {
                 using (StreamReader reader = process.StandardOutput)
+                {
+                    string line = reader.ReadToEnd();
+                    sbBuilder.AppendLine(line);
+                    Logger.Debug(line);
+                }
+                using (StreamReader reader = process.StandardError)
                 {
                     string line = reader.ReadToEnd();
                     sbBuilder.AppendLine(line);
@@ -1309,10 +1375,53 @@ namespace ATTM_API.Helpers
                 intExitCode = process.ExitCode;
             }
 
-            Logger.Info("-- End Copy Code to Client");
             Logger.Info($"-- ExitCode: {intExitCode}");
             result.Add("result", intExitCode != 0 ? "error" : "success");
             result.Add("message", sbBuilder.ToString());
+
+            return result;
+        }
+
+        public static async Task<JObject> CheckRunner(TestClient testClient, string processName, IATTMAppSettings appSettings)
+        {
+            JObject result = new JObject();
+
+            StringBuilder sbBuilder = new StringBuilder();
+            ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.FileName = $@"{appSettings.PSToolsFolder}\pslist.exe";
+            startInfo.Arguments = $@"\\{testClient.IPAddress} -accepteula -nobanner -u {testClient.User} -p {testClient.Password} -e {processName}";
+            startInfo.UseShellExecute = false;
+            startInfo.RedirectStandardOutput = true;
+            startInfo.RedirectStandardError = true;
+
+            using (Process process = Process.Start(startInfo))
+            {
+                using (StreamReader reader = process.StandardOutput)
+                {
+                    string line = reader.ReadToEnd();
+                    sbBuilder.AppendLine(line);
+                    Logger.Debug(line);
+                }
+                using (StreamReader reader = process.StandardError)
+                {
+                    string line = reader.ReadToEnd();
+                    sbBuilder.AppendLine(line);
+                    Logger.Debug(line);
+                }
+                await process.WaitForExitAsync();
+            }
+            if (sbBuilder.ToString().Contains($"Elapsed Time")) {
+                result.Add("message", $"{processName} is running on {testClient.Name}!");
+            }
+            else if (sbBuilder.ToString().Contains($"process {processName} was not found"))
+            {
+                result.Add("message", $"{processName} is not running on {testClient.Name}!");
+            } else
+            {
+                result.Add("message", $"{processName} is not running on {testClient.Name}!");
+            }
+            result.Add("result", "success");
+            result.Add("data", sbBuilder.ToString());
 
             return result;
         }

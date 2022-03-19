@@ -68,14 +68,24 @@ namespace ATTM_API.Services
             return TestProjectHelper.GetLatestCode();
 
         }
-        public Task<JObject> CopyCodeToClient(TestClient client)
+        public Task<JObject> CopyCodeToClient(TestClient client, string type)
         {
-            return TestProjectHelper.CopyCodeToClient(client, _appSettings);
+            return TestProjectHelper.CopyCodeToClient(client, type, _appSettings);
 
         }
         public Task<JObject> UpdateReleaseForClient(TestClient client, string newValue)
         {
             return TestProjectHelper.UpdateReleaseForClient(client, newValue);
+
+        }
+        public Task<JObject> RunAutoRunner(TestClient client)
+        {
+            return TestProjectHelper.RunAutoRunner(client, _appSettings);
+
+        }
+        public Task<JObject> CheckRunner(TestClient client, string process)
+        {
+            return TestProjectHelper.CheckRunner(client, process, _appSettings);
 
         }
     }

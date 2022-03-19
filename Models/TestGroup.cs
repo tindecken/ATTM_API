@@ -16,6 +16,8 @@ namespace ATTM_API.Models
         [JsonProperty("Name")]
         public string Name { get; set; } 
         public string CodeName { get; set; }
+        public string Owner { get; set; }
+        public string WorkItem { get; set; }
         public string Description { get; set; } = string.Empty;
         public List<string> TestCaseIds { get; set; } = new List<string>();
         public string CategoryId { get; set; }

@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ATTM_API.Models.Entities;
 
 namespace ATTM_API.Services
 {
@@ -257,6 +258,34 @@ namespace ATTM_API.Services
                 result.Add("data", null);
                 result.Add("message", $"Category {category.Name} is already exist.");
             }
+            return result;
+        }
+        public async Task<JObject> UpdateCategoryAsync(Category category)
+        {
+            // Update category
+            JObject result = new JObject();
+            var filterDuplicated = Builders<Category>.Filter.Ne("_id", ObjectId.Parse(category.Id));
+            filterDuplicated &= Builders<Category>.Filter.Eq("Name", category.Name);
+            var duplicatedCat = await _categories.Find(filterDuplicated).FirstOrDefaultAsync();
+            if (duplicatedCat != null)
+            {
+                result.Add("message", $"Duplicated category name: {category.Name}");
+                result.Add("result", "error");
+                return result;
+            }
+            var filter = Builders<Category>.Filter.Eq("_id", ObjectId.Parse(category.Id));
+            var cat = _categories.Find(filter).FirstOrDefault();
+            if (cat == null)
+            {
+                result.Add("message", $"Can't find category with id {category.Id}");
+                result.Add("result", "error");
+                return result;
+            }
+            var updatedCategory = await _categories.ReplaceOneAsync(filter, category);
+
+            result.Add("message", "Updated category !");
+            result.Add("result", "success");
+            result.Add("data", JToken.FromObject(category));
             return result;
         }
     }

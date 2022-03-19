@@ -85,8 +85,7 @@ namespace ATTM_API.Services
             JObject result = new JObject();
             TestCase tc = testCaseHistory.TestCase;
             tc.LastModifiedDate = DateTime.Now;
-            UpdateTestCaseData updateData = testCaseHistory.UpdateTestCaseData;
-            updateData.UpdateDate = DateTime.UtcNow;
+            testCaseHistory.UpdateTestCaseData.UpdateDate = DateTime.UtcNow;
             var filter = Builders<TestCase>.Filter.Eq("_id", ObjectId.Parse(tc.Id));
             var test = _testcases.Find(filter).FirstOrDefault();
             if (test == null)
@@ -109,9 +108,21 @@ namespace ATTM_API.Services
             // Update test case
             JObject result = new JObject();
             TestCase tc = testCaseHistory.TestCase;
-            tc.LastModifiedDate = DateTime.Now;
             UpdateTestCaseData updateData = testCaseHistory.UpdateTestCaseData;
-            updateData.UpdateDate = DateTime.UtcNow;
+            tc.LastModifiedDate = DateTime.UtcNow;
+            tc.LastModifiedUser = updateData.UpdateBy;
+            tc.lastModifiedMessage = updateData.UpdateMessage;
+            testCaseHistory.UpdateTestCaseData.UpdateDate = DateTime.UtcNow;
+            var filterDuplicate = Builders<TestCase>.Filter.Eq("CodeName", tc.CodeName);
+            filterDuplicate &= Builders<TestCase>.Filter.Ne("_id", ObjectId.Parse(tc.Id));
+            var duplicatedTC = await _testcases.Find(filterDuplicate).FirstOrDefaultAsync();
+            if (duplicatedTC != null)
+            {
+                result.Add("message", $"Duplicated test case code name: {tc.CodeName}");
+                result.Add("result", "error");
+                return result;
+            }
+
             var filter = Builders<TestCase>.Filter.Eq("_id", ObjectId.Parse(tc.Id));
             var test = _testcases.Find(filter).FirstOrDefault();
             if (test == null)
@@ -127,7 +138,7 @@ namespace ATTM_API.Services
 
             result.Add("message", "Updated test !");
             result.Add("result", "success");
-            result.Add("data", JToken.FromObject(testCaseHistory.TestCase));
+            result.Add("data", JToken.FromObject(tc));
             return result;
         }
         public async Task<JObject> GetUpdateHistories(string testCaseId)

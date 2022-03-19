@@ -32,6 +32,7 @@ namespace ATTM_API.Models
         public DateTime LastModifiedDate { get; set; } = DateTime.UtcNow;
         
         public string LastModifiedUser { get; set; }
+        public string lastModifiedMessage { get; set; }
         public string Description { get; set; } = string.Empty;
         public int TimeOutInMinutes { get; set; } = 60;
         public TestCase DependOn { get; set; }

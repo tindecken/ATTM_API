@@ -144,5 +144,20 @@ namespace ATTM_API.Controllers
                 return StatusCode(500, response);
             }
         }
+        [HttpPost("updatecategory")]
+        public async Task<ActionResult<JObject>> UpdateCategory(Category cat)
+        {
+            var response = await _categoryService.UpdateCategoryAsync(cat);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
     }
 }

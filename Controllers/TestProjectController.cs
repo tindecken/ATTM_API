@@ -111,10 +111,10 @@ namespace ATTM_API.Controllers
                 return StatusCode(500, response);
             }
         }
-        [HttpPost("copycodetoclient")]
-        public async Task<ActionResult<JObject>> copyCodeToClients([FromBody] TestClient testClient)
+        [HttpPost("copycodetoclient/{type}")]
+        public async Task<ActionResult<JObject>> copyCodeToClients([FromBody] TestClient testClient, string type)
         {
-            var response = await _testProjectService.CopyCodeToClient(testClient);
+            var response = await _testProjectService.CopyCodeToClient(testClient, type);
             if (response == null) return StatusCode(500, $"Internal server error.");
             var result = response.GetValue("result").ToString();
             if (result.Equals("success"))
@@ -126,6 +126,38 @@ namespace ATTM_API.Controllers
                 return StatusCode(500, response);
             }
         }
+        [HttpPost("runautorunner")]
+        public async Task<ActionResult<JObject>> runAutoRunner([FromBody] TestClient testClient)
+        {
+            var response = await _testProjectService.RunAutoRunner(testClient);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+
+        [HttpPost("checkrunner/{process}")]
+        public async Task<ActionResult<JObject>> CheckRunner([FromBody] TestClient testClient, string process)
+        {
+            var response = await _testProjectService.CheckRunner(testClient, process);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+
         [HttpPost("updatereleaseforclient/{newValue}")]
         public async Task<ActionResult<JObject>> updateReleaseForClient([FromBody] TestClient testClient, string newValue)
         {

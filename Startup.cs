@@ -46,7 +46,7 @@ namespace ATTM_API
             services.AddSingleton<TestSuiteService>();
             services.AddSingleton<TestGroupService>();
             services.AddSingleton<TestCaseService>();
-            services.AddSingleton<TestEnvironmentService>();
+            services.AddSingleton<TestEnvService>();
             services.AddSingleton<UserService>();
             services.AddSingleton<KeywordService>();
             services.AddSingleton<TestProjectService>();
