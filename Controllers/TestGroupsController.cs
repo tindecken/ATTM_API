@@ -65,5 +65,20 @@ namespace ATTM_API.Controllers
                 return StatusCode(500, response);
             }
         }
+        [HttpPost("updatetestgroup")]
+        public async Task<ActionResult<JObject>> UpdateTestGroup(TestGroup testGroup)
+        {
+            var response = await _testGroupService.UpdateTestGroupAsync(testGroup);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
     }
 }

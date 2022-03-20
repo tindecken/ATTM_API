@@ -36,7 +36,7 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost("{tsId:length(24)}/testgroups")]
-        public async Task<ActionResult<TestSuite>> CreateTestSuite(string tsId, TestGroup testGroup)
+        public async Task<ActionResult<TestSuite>> CreateTestGroup(string tsId, TestGroup testGroup)
         {
             var result = await _testSuiteService.CreateTestGroup(tsId, testGroup);
             if (result != null)
@@ -45,7 +45,7 @@ namespace ATTM_API.Controllers
             }
             else
             {
-                return StatusCode(409, $"TestGroup '{testGroup.Name}' already exists.");
+                return StatusCode(409, $"TestGroup '{testGroup.CodeName}' already exists.");
             }
         }
 
@@ -54,6 +54,21 @@ namespace ATTM_API.Controllers
         public async Task<ActionResult<JObject>> DeleteTestGroups(string testSuiteId, [FromBody] List<string> lstTestGroupIds)
         {
             var response = await _testSuiteService.DeleteTestGroups(testSuiteId, lstTestGroupIds);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+        [HttpPost("updatetestsuite")]
+        public async Task<ActionResult<JObject>> UpdateCategory(TestSuite testsuite)
+        {
+            var response = await _testSuiteService.UpdateTestSuiteAsync(testsuite);
             if (response == null) return StatusCode(500, $"Internal server error.");
             var result = response.GetValue("result").ToString();
             if (result.Equals("success"))

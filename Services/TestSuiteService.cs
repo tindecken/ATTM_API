@@ -112,5 +112,34 @@ namespace ATTM_API.Services
             result.Add("deletedTestCases", arrDeletedTestCases);
             return result;
         }
+        public async Task<JObject> UpdateTestSuiteAsync(TestSuite testSuite)
+        {
+            // Update test suite
+            JObject result = new JObject();
+            var filterDuplicated = Builders<TestSuite>.Filter.Ne("_id", ObjectId.Parse(testSuite.Id));
+            filterDuplicated &= Builders<TestSuite>.Filter.Eq("CodeName", testSuite.CodeName);
+            filterDuplicated &= Builders<TestSuite>.Filter.Eq("CategoryId", testSuite.CategoryId);
+            var duplicatedTS = await _testsuites.Find(filterDuplicated).FirstOrDefaultAsync();
+            if (duplicatedTS != null)
+            {
+                result.Add("message", $"Duplicated test suite code name: {testSuite.CodeName}");
+                result.Add("result", "error");
+                return result;
+            }
+            var filter = Builders<TestSuite>.Filter.Eq("_id", ObjectId.Parse(testSuite.Id));
+            var ts = _testsuites.Find(filter).FirstOrDefault();
+            if (ts == null)
+            {
+                result.Add("message", $"Can't find test suite with id {testSuite.Id}");
+                result.Add("result", "error");
+                return result;
+            }
+            var updatedTestSuite = await _testsuites.ReplaceOneAsync(filter, testSuite);
+
+            result.Add("message", "Updated test suite !");
+            result.Add("result", "success");
+            result.Add("data", JToken.FromObject(testSuite));
+            return result;
+        }
     }
 }
