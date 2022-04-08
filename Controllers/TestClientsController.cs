@@ -78,9 +78,24 @@ namespace ATTM_API.Controllers
             return NoContent();
         }
         [HttpGet("ping/{ip}")]
-        public async Task<ActionResult<TestEnvHistory>> Ping(string ip)
+        public async Task<ActionResult<TestClient>> Ping(string ip)
         {
             var response = await _testClientService.PingCheck(ip);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+        [HttpPost("save")]
+        public async Task<ActionResult<TestClient>> Save([FromBody] TestClient[] testClients)
+        {
+            var response = await _testClientService.Save(testClients);
             if (response == null) return StatusCode(500, $"Internal server error.");
             var result = response.GetValue("result").ToString();
             if (result.Equals("success"))

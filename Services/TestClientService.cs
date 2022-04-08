@@ -71,6 +71,39 @@ namespace ATTM_API.Services
 
             return result;
         }
-
+        public async Task<JObject> Save(TestClient[] testClients)
+        {
+            JObject result = new JObject();
+            var lstCreatedId = new List<string>();
+            foreach (var tc in testClients)
+            {
+                if (ObjectId.TryParse(tc.Id, out _))
+                {
+                    var existingTestClient = await _testclients.Find<TestClient>(t => t.Id == tc.Id).FirstOrDefaultAsync();
+                    if (existingTestClient != null)
+                    {
+                        // if exist ==> update
+                        var createdTC = await _testclients.ReplaceOneAsync(tclient => tclient.Id == tc.Id, tc);
+                        if (createdTC.IsAcknowledged)
+                        {
+                            lstCreatedId.Add(tc.Id);
+                        }
+                    }
+                }
+                else
+                {
+                    tc.Id = ObjectId.GenerateNewId().ToString();
+                    await _testclients.InsertOneAsync(tc);
+                    lstCreatedId.Add(tc.Id);
+                }
+            }
+            // Delete all test clients not in list
+            var filter = Builders<TestClient>.Filter.Nin(u => u.Id, lstCreatedId);
+            await _testclients.DeleteManyAsync(filter);
+            result.Add("result", "success");
+            result.Add("message", $"Save success !");
+            result.Add("data", "");
+            return result;
+        }
     }
 }

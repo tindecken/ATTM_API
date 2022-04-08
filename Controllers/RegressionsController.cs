@@ -5,6 +5,7 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
+using ATTM_API.Models.Entities;
 
 namespace ATTM_API.Controllers
 {
@@ -21,8 +22,21 @@ namespace ATTM_API.Controllers
 
         [HttpGet]
         [Authorize]
-        public ActionResult<List<Regression>> Get() =>
-            _regressionService.Get();
+        public async Task<ActionResult<JObject>> Get()
+        {
+            var response = await _regressionService.Get();
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+
 
         [HttpGet("{id:length(24)}", Name = "GetRegression")]
         public async Task<ActionResult<Regression>> Get(string id)
@@ -55,7 +69,7 @@ namespace ATTM_API.Controllers
         [Authorize]
         public async Task<ActionResult<JObject>> CreateRegressionTests(string regressionId, [FromBody] List<string> testcaseIds)
         {
-            var response = await _regressionService.CreateRegressionTestsFromTestCaseIds(regressionId, testcaseIds);
+            var response = await _regressionService.CreateRegressionTests(regressionId, testcaseIds);
             if (response == null) return StatusCode(500, $"Internal server error.");
             var result = response.GetValue("result").ToString();
             if (result.Equals("success"))
@@ -88,6 +102,52 @@ namespace ATTM_API.Controllers
         public async Task<ActionResult<JObject>> GetDetailRegression(string id)
         {
             var response = await _regressionService.GetDetailRegression(id);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+        [HttpPost("findregressiontest")]
+        public async Task<ActionResult<JObject>> FindTestCaseByName([FromBody] FindRegressionTestData findRegressionTestData)
+        {
+            var response = await _regressionService.FindTestCaseByName(findRegressionTestData);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+
+        [HttpDelete()]
+        public async Task<ActionResult<JObject>> DeleteRegression([FromBody] DeleteRegressionData deleteRegressionData)
+        {
+            var response = await _regressionService.DeleteRegression(deleteRegressionData);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
+        [HttpPost("update")]
+        public async Task<ActionResult<JObject>> UpdateRegression([FromBody] Regression regression)
+        {
+            var response = await _regressionService.UpdateRegression(regression);
             if (response == null) return StatusCode(500, $"Internal server error.");
             var result = response.GetValue("result").ToString();
             if (result.Equals("success"))

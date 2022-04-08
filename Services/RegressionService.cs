@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ATTM_API.Models.Entities;
 
 namespace ATTM_API.Services
 {
@@ -35,9 +36,17 @@ namespace ATTM_API.Services
             _regressions = database.GetCollection<Regression>(settings.RegressionsCollectionName);
         }
 
-        public List<Regression> Get() =>
-            _regressions.Find(new BsonDocument()).ToList();
-            
+        public async Task<JObject> Get()
+        {
+            JObject result = new JObject();
+            var filter = Builders<Regression>.Filter.Ne(r => r.IsDeleted, true);
+            var sort = Builders<Regression>.Sort.Descending(r => r.CreatedDate);
+            var regressions = await _regressions.Find(filter).Sort(sort).ToListAsync();
+            result.Add("result", "success");
+            result.Add("data", JToken.FromObject(regressions));
+            result.Add("message", $"There're {regressions.Count} regression(s).");
+            return result;
+        }
 
         public async Task<Regression> Get(string id) =>
             await _regressions.Find<Regression>(regression => regression.Id == id).FirstOrDefaultAsync();
@@ -63,7 +72,7 @@ namespace ATTM_API.Services
             }
         }
 
-        public async Task<JObject> CreateRegressionTestsFromTestCaseIds(string regressionId, List<string> testCaseIds)
+        public async Task<JObject> CreateRegressionTests(string regressionId, List<string> testCaseIds)
         {
             // Get regression
             JObject result = new JObject();
@@ -121,13 +130,14 @@ namespace ATTM_API.Services
 
                 var regressionTest = new RegressionTest
                 {
+                    RegressionId = regressionId,
                     TestCaseId = currTestCase.Id,
                     TestCaseCodeName = currTestCase.CodeName,
                     TestCaseName = currTestCase.Name,
                     TestCaseFullCodeName = $"TestProject.TestCases.{category.Name}.{testsuite.CodeName}.{currTestCase.CodeName}",
                     TestCaseType =  currTestCase.TestCaseType,
                     Description =  currTestCase.Description,
-                    Team = currTestCase.Team,
+                    Team = currTestCase.Team ?? string.Empty,
                     CategoryName = category.Name,
                     TestSuiteFullName = $"{testsuite.CodeName}: {testsuite.Name}",
                     TestGroupFullName = $"{testgroup.CodeName}: {testgroup.Name}",
@@ -140,9 +150,6 @@ namespace ATTM_API.Services
                     DontRunWithQueues = currTestCase.DontRunWithQueues,
                     Owner = currTestCase.Owner ?? string.Empty,
                     Status = "InQueue",
-                    Regression = currentRegression.Name,
-                    Release = currentRegression.Release,
-                    Build = currentRegression.Build,
                     RegressionRunRecordIds = new List<string>(),
                 };
 
@@ -209,7 +216,7 @@ namespace ATTM_API.Services
                 // Already added but with CodeName --> delete it.
                 if (isExisted)
                 {
-                    if (string.IsNullOrEmpty(currRegressionTest.Release))
+                    if (string.IsNullOrEmpty(currRegressionTest.RegressionId))
                     {
                         await _regressionTests.FindOneAndDeleteAsync(rt => rt.Id == regressionTestId);
                         result.Add("result", "error");
@@ -219,17 +226,11 @@ namespace ATTM_API.Services
                     }
 
                     result.Add("result", "success");
-                    result.Add("message", $"RegressionTest {currRegressionTest.TestCaseCodeName} is already existed, but added in release: {currRegressionTest.Release}");
+                    result.Add("message", $"RegressionTest {currRegressionTest.TestCaseCodeName} is already existed, but added in release: {currRegressionTest.RegressionId}");
                     result.Add("data", null);
                     return result;
                 }
             }
-
-            // Update RegressionTest, set Release, Build
-            var regressionTestUpdate = Builders<RegressionTest>.Update
-                .Set(r => r.Release, currRegression.Release)
-                .Set(r => r.Build, currRegression.Build);
-            await _regressionTests.FindOneAndUpdateAsync(r => r.Id == regressionTestId, regressionTestUpdate);
 
             // Add to regression
             var filter = Builders<Regression>.Filter.Eq(r => r.Id, regressionId);
@@ -295,6 +296,114 @@ namespace ATTM_API.Services
             result.Add("result", "success");
             result.Add("message", $"{arrayRegTest.Count} regression test(s)");
             result.Add("data",  arrayRegTest);
+            return result;
+        }
+        public async Task<JObject> FindTestCaseByName(FindRegressionTestData findRegressionTestData)
+        {
+            // Get regression
+            JObject result = new JObject();
+            var currRegression = await _regressions.Find<Regression>(r => r.Id == findRegressionTestData.RegressionId).FirstOrDefaultAsync();
+            if (currRegression == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Not Found Regression with ID: {findRegressionTestData.RegressionId}");
+                result.Add("data", null);
+                return result;
+            }
+
+            JArray arrayRegTest = new JArray();
+            // Get all regressionTests by name
+            var filter = Builders<RegressionTest>.Filter.Eq(rt => rt.RegressionId, findRegressionTestData.RegressionId);
+            filter &= Builders<RegressionTest>.Filter.Where(rt => rt.TestCaseCodeName.ToLower().Contains(findRegressionTestData.Name.ToLower().Trim()) 
+                                                                  || rt.TestCaseName.ToLower().Contains(findRegressionTestData.Name.ToLower().Trim()));
+
+            var regressionTests = await _regressionTests.Find(filter).ToListAsync();
+            foreach (var regressionTest in regressionTests)
+            {
+                // Get last RegressionRunRecordId
+                var lastRegressionRunRecordId = regressionTest.RegressionRunRecordIds.LastOrDefault();
+                if (!string.IsNullOrEmpty(lastRegressionRunRecordId))
+                {
+                    //Get RegressionRunRecord
+                    var lastRegRunRecord = await _regresionRunRecords
+                        .Find<RegressionRunRecord>(rrr => rrr.Id == lastRegressionRunRecordId)
+                        .FirstOrDefaultAsync();
+                    if (lastRegRunRecord == null)
+                    {
+
+                    }
+                    else
+                    {
+                        regressionTest.LastRegressionRunRecord = lastRegRunRecord;
+                        if (!regressionTest.Status.ToUpper().Equals("ANALYSEFAILED")
+                            && !regressionTest.Status.ToUpper().Equals("INQUEUE")
+                            && !regressionTest.Status.ToUpper().Equals("ANALYSEPASSED")
+                            && !regressionTest.Status.ToUpper().Equals("INCOMPATIBLE"))
+                            regressionTest.Status = lastRegRunRecord.Status;
+                    }
+                }
+                arrayRegTest.Add(JToken.FromObject(regressionTest));
+            }
+
+            result.Add("result", "success");
+            result.Add("message", $"{arrayRegTest.Count} regression test(s)");
+            result.Add("data", arrayRegTest);
+            return result;
+        }
+        public async Task<JObject> DeleteRegression(DeleteRegressionData deleteRegressionData)
+        {
+            // Get regression
+            JObject result = new JObject();
+            var currRegression = await _regressions.Find<Regression>(r => r.Id == deleteRegressionData.RegressionId).FirstOrDefaultAsync();
+            if (currRegression == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Not Found Regression with ID: {deleteRegressionData.RegressionId}");
+                result.Add("data", null);
+                return result;
+            }
+
+            var filter = Builders<Regression>.Filter.Eq(r => r.Id, deleteRegressionData.RegressionId);
+            var update = Builders<Regression>.Update.Set(r => r.IsDeleted, true)
+                .Set(r => r.LastUpdatedBy, deleteRegressionData.DeletedBy)
+                .Set(r => r.LastUpdatedDate, DateTime.UtcNow);
+
+            var updateResult = await _regressions.UpdateOneAsync(filter, update);
+
+            result.Add("result", "success");
+            result.Add("message", $"Deleted regression: {currRegression.Name}");
+            result.Add("data", JToken.FromObject(updateResult));
+            return result;
+        }
+        public async Task<JObject> UpdateRegression(Regression updateRegression)
+        {
+            // Get regression
+            JObject result = new JObject();
+            var existingName = await _regressions.Find<Regression>(r => r.Name == updateRegression.Name && r.Id != updateRegression.Id).FirstOrDefaultAsync();
+            if (existingName != null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Duplicated name: {updateRegression.Name}");
+                result.Add("data", null);
+                return result;
+            }
+
+            var existingRegression = await _regressions.Find<Regression>(r => r.Id == updateRegression.Id).FirstOrDefaultAsync();
+            if (existingRegression == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", $"Not Found Regression with Id: {updateRegression.Id}");
+                result.Add("data", null);
+                return result;
+            }
+
+            updateRegression.LastUpdatedDate = DateTime.UtcNow;
+            var filter = Builders<Regression>.Filter.Eq(r => r.Id, updateRegression.Id);
+            var updateResult = await _regressions.FindOneAndReplaceAsync(filter, updateRegression);
+
+            result.Add("result", "success");
+            result.Add("message", $"Update Regression success !");
+            result.Add("data", JToken.FromObject(updateRegression));
             return result;
         }
     }
