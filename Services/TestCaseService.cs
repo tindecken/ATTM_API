@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ATTM_API.Models.Entities;
+using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
 
@@ -16,7 +17,9 @@ namespace ATTM_API.Services
         private readonly IMongoCollection<TestCase> _testcases;
         private readonly IMongoCollection<Category> _categories;
         private readonly IMongoCollection<TestSuite> _testsuites;
+        private readonly IMongoCollection<RegressionTest> _regressionTests;
         private readonly IMongoCollection<TestGroup> _testgroups;
+        private readonly IMongoCollection<Regression> _regressions;
         private readonly IMongoCollection<TestCaseHistory> _testcasehistories;
         private static readonly log4net.ILog Logger = log4net.LogManager.GetLogger(typeof(Program));
 
@@ -28,7 +31,9 @@ namespace ATTM_API.Services
             _categories = database.GetCollection<Category>(settings.CategoriesCollectionName);
             _testgroups = database.GetCollection<TestGroup>(settings.TestGroupsCollectionName);
             _testsuites = database.GetCollection<TestSuite>(settings.TestSuitesCollectionName);
+            _regressionTests = database.GetCollection<RegressionTest>(settings.RegressionTestsCollectionName);
             _testcasehistories = database.GetCollection<TestCaseHistory>(settings.TestCaseHistoriesCollectionName);
+            _regressions = database.GetCollection<Regression>(settings.RegressionsCollectionName);
         }
 
         public async Task<List<TestCase>> Get() =>
@@ -158,6 +163,46 @@ namespace ATTM_API.Services
                 result.Add("data", JToken.FromObject(testCaseHistories));
                 result.Add("result", "success");
                 result.Add("count", testCaseHistories.Count);
+            }
+
+            return result;
+        }
+        public async Task<JObject> GetLastRegressionResult(string testCaseId)
+        {
+            JObject result = new JObject();
+            var filter = Builders<RegressionTest>.Filter.Eq(rt => rt.TestCaseId, testCaseId);
+            var sort = Builders<RegressionTest>.Sort.Descending(rt => rt.Id);
+            var lastRegressionTest = await _regressionTests.Find(filter).Sort(sort).FirstOrDefaultAsync();
+            if (lastRegressionTest != null)
+            {
+                var filterRegression = Builders<Regression>.Filter.Eq(r => r.Id, lastRegressionTest.RegressionId);
+                filterRegression &= Builders<Regression>.Filter.Eq(r => r.IsDeleted, false);
+                var regression = _regressions.Find(filterRegression).FirstOrDefault();
+                if (regression != null)
+                {
+                    var data = new JObject();
+                    data.Add("Status", lastRegressionTest.Status);
+                    data.Add("Regression", regression.Name);
+                    data.Add("Build", regression.Build);
+                    data.Add("Issue", lastRegressionTest.Issue);
+                    
+                    result.Add("data", data);
+                    result.Add("result", "success");
+                }
+                else
+                {
+                    var data = new JObject();
+                    data.Add("Status", lastRegressionTest.Status);
+                    
+                    result.Add("data", data);
+                    result.Add("result", "success");
+                }
+            }
+            else
+            {
+                result.Add("data", null);
+                result.Add("result", "success");
+                result.Add("message", "There's no regression test for this test case !");
             }
 
             return result;

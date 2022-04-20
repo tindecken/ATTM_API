@@ -276,17 +276,13 @@ namespace ATTM_API.Services
                         var lastRegRunRecord = await _regresionRunRecords
                             .Find<RegressionRunRecord>(rrr => rrr.Id == lastRegressionRunRecordId)
                             .FirstOrDefaultAsync();
-                        if (lastRegRunRecord == null)
-                        {
-
-                        }
-                        else
+                        if (lastRegRunRecord != null)
                         {
                             currRegressionTest.LastRegressionRunRecord = lastRegRunRecord;
                             if (!currRegressionTest.Status.ToUpper().Equals("ANALYSEFAILED")
-                                    && !currRegressionTest.Status.ToUpper().Equals("INQUEUE")
-                                    && !currRegressionTest.Status.ToUpper().Equals("ANALYSEPASSED")
-                                    && !currRegressionTest.Status.ToUpper().Equals("INCOMPATIBLE"))
+                                && !currRegressionTest.Status.ToUpper().Equals("INQUEUE")
+                                && !currRegressionTest.Status.ToUpper().Equals("ANALYSEPASSED")
+                                && !currRegressionTest.Status.ToUpper().Equals("INCOMPATIBLE"))
                                 currRegressionTest.Status = lastRegRunRecord.Status;
                         }
                     }
@@ -328,11 +324,7 @@ namespace ATTM_API.Services
                     var lastRegRunRecord = await _regresionRunRecords
                         .Find<RegressionRunRecord>(rrr => rrr.Id == lastRegressionRunRecordId)
                         .FirstOrDefaultAsync();
-                    if (lastRegRunRecord == null)
-                    {
-
-                    }
-                    else
+                    if (lastRegRunRecord != null)
                     {
                         regressionTest.LastRegressionRunRecord = lastRegRunRecord;
                         if (!regressionTest.Status.ToUpper().Equals("ANALYSEFAILED")

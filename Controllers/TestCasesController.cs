@@ -99,5 +99,20 @@ namespace ATTM_API.Controllers
                 return StatusCode(500, response);
             }
         }
+        [HttpGet("getlastregressionresult/{id:length(24)}")]
+        public async Task<ActionResult<TestCase>> GetLastRegressionResult(string id)
+        {
+            var response = await _testCaseService.GetLastRegressionResult(id);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
+        }
     }
 }
