@@ -159,5 +159,10 @@ namespace ATTM_API.Controllers
                 return StatusCode(500, response);
             }
         }
+        [HttpGet("test")]
+        public async Task<ActionResult> Test()
+        {
+            return StatusCode(200, "It works");
+        }
     }
 }
