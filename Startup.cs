@@ -60,6 +60,7 @@ namespace ATTM_API
             services.AddSingleton<RegressionRunRecordService>();
             services.AddSingleton<SettingService>();
             services.AddSingleton<GridFSBucketService>();
+            services.AddSingleton<TestProjectHelper>();
             services.AddCors();
             services.AddControllers()
                 .AddNewtonsoftJson(options => options.UseMemberCasing());
@@ -85,6 +86,12 @@ namespace ATTM_API
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ATTM_FE API"));
             }
+            else
+            {
+                app.UseSwagger();
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ATTM_FE API"));
+            }
+
             loggerFactory.AddLog4Net();
             app.UseExceptionHandler(a => a.Run(async context =>
             {

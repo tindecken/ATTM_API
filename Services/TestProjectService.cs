@@ -47,11 +47,13 @@ namespace ATTM_API.Services
 
         public Task<JObject> GenerateDevCode(List<TestCase> testCases)
         {
-            return TestProjectHelper.GenerateDevCode(testCases, _categories, _testsuites, _testgroups, _testauts, _settings);
+            var testProjectHelper = new TestProjectHelper(_appSettings);
+            return testProjectHelper.GenerateDevCode(testCases, _categories, _testsuites, _testgroups, _testauts, _settings);
         }
         public Task<JObject> GenerateRegressionCode(List<RegressionTest> regressionTests)
         {
-            return TestProjectHelper.GenerateRegressionCode(regressionTests, _categories, _testsuites, _testgroups, _testcases, _testauts);
+            var testProjectHelper = new TestProjectHelper(_appSettings);
+            return testProjectHelper.GenerateRegressionCode(regressionTests, _categories, _testsuites, _testgroups, _testcases, _testauts);
         }
         public async Task<JObject> CreateDevQueue(List<TestCase> testCases, TestClient testClient)
         {
@@ -60,7 +62,8 @@ namespace ATTM_API.Services
 
         public Task<JObject> BuildProject()
         {
-            return TestProjectHelper.BuildProject();
+            var testProjectHelper = new TestProjectHelper(_appSettings);
+            return testProjectHelper.BuildProject();
             
         }
         public Task<JObject> GetLatestCode()

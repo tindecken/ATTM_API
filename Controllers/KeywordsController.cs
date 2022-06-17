@@ -23,12 +23,6 @@ namespace ATTM_API.Controllers
         public ActionResult<List<Keyword>> Get() =>
             _keywordService.Get();
 
-        [HttpGet("refresh")]
-        [Authorize]
-        public async Task<JObject> Refresh() {
-            return await _keywordService.RefreshAsync();
-        }
-
         [HttpGet("getkeywords")]
         [Authorize]
         public async Task<ActionResult<JObject>> GetKeywords()

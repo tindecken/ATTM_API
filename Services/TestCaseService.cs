@@ -207,5 +207,55 @@ namespace ATTM_API.Services
 
             return result;
         }
+
+        public async Task<JObject> RestoreTestCase(RestoreTestCaseData restoreTCData)
+        {
+            JObject result = new JObject();
+
+            var filterTestHistory = Builders<TestCaseHistory>.Filter.Eq("_id", ObjectId.Parse(restoreTCData.Id));
+            var testHistory = await _testcasehistories.Find(filterTestHistory).FirstOrDefaultAsync();
+            if (testHistory == null)
+            {
+                result.Add("message", $"Can't find test case history with id: {restoreTCData.Id}");
+                result.Add("result", "error");
+                return result;
+            }
+
+            var restoreTestCase = testHistory.TestCase;
+            restoreTestCase.lastModifiedMessage = restoreTCData.RestoreMessage;
+            restoreTestCase.LastModifiedDate = DateTime.UtcNow;
+            restoreTestCase.LastModifiedUser = restoreTCData.RestoreBy;
+
+            var builderTC = Builders<TestCase>.Filter;
+            var filterTC = builderTC.Eq(x => x.Id, restoreTestCase.Id) & builderTC.Eq(x => x.IsDeleted, false);
+            var testCase = await _testcases.Find(filterTC).FirstOrDefaultAsync();
+            if (testCase == null)
+            {
+                result.Add("message", $"Test case with id: {restoreTestCase.Id} isn't exists!");
+                result.Add("result", "error");
+                return result;
+            }
+            // Update testcase from testCaseHistory
+            await _testcases.ReplaceOneAsync(filterTC, restoreTestCase);            
+
+            // Create new test History
+            var newTestHistory = new TestCaseHistory();
+            newTestHistory.TestCase = restoreTestCase;
+            var UpdateData = new UpdateTestCaseData()
+            {
+                UpdateType = "Restore",
+                UpdateBy = restoreTCData.RestoreBy,
+                UpdateMessage = $"System: restore from historyId: {restoreTCData.Id}\nUser: {restoreTCData.RestoreMessage}",
+                UpdateDate = DateTime.UtcNow
+            };
+            newTestHistory.UpdateTestCaseData = UpdateData;
+            await _testcasehistories.InsertOneAsync(newTestHistory);
+            
+
+            result.Add("message", "Restored test !");
+            result.Add("result", "success");
+            result.Add("data", JToken.FromObject(restoreTestCase));
+            return result;
+        }
     }
 }
