@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Net;
 using System.Threading.Tasks;
 using ATTM_API.Models.Entities;
+using CommonModels;
 
 namespace ATTM_API.Controllers
 {

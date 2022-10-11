@@ -1,4 +1,5 @@
 using ATTM_API.Models;
+using CommonModels;
 
 namespace ATTM_API.Models
 {

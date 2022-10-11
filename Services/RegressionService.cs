@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ATTM_API.Models.Entities;
+using CommonModels;
 
 namespace ATTM_API.Services
 {
@@ -138,7 +139,7 @@ namespace ATTM_API.Services
                     TestCaseFullCodeName = $"TestProject.TestCases.{category.Name}.{testsuite.CodeName}.{currTestCase.CodeName}",
                     TestCaseType =  currTestCase.TestCaseType,
                     Description =  currTestCase.Description,
-                    Team = currTestCase.Team ?? string.Empty,
+                    Team = currTestCase.Team,
                     CategoryName = category.Name,
                     TestSuiteFullName = $"{testsuite.CodeName}: {testsuite.Name}",
                     TestGroupFullName = $"{testgroup.CodeName}: {testgroup.Name}",
@@ -149,9 +150,10 @@ namespace ATTM_API.Services
                     WorkItem = currTestCase.WorkItem,
                     Queue = currTestCase.Queue,
                     DontRunWithQueues = currTestCase.DontRunWithQueues,
-                    Owner = currTestCase.Owner ?? string.Empty,
-                    Status = "InQueue",
+                    Owner = currTestCase.Owner,
+                    Status = TestStatus.InQueue,
                     RegressionRunRecordIds = new List<string>(),
+                    TestSteps = currTestCase.TestSteps
                 };
 
                 await _regressionTests.InsertOneAsync(regressionTest);
@@ -280,10 +282,10 @@ namespace ATTM_API.Services
                         if (lastRegRunRecord != null)
                         {
                             currRegressionTest.LastRegressionRunRecord = lastRegRunRecord;
-                            if (!currRegressionTest.Status.ToUpper().Equals("ANALYSEFAILED")
-                                && !currRegressionTest.Status.ToUpper().Equals("INQUEUE")
-                                && !currRegressionTest.Status.ToUpper().Equals("ANALYSEPASSED")
-                                && !currRegressionTest.Status.ToUpper().Equals("INCOMPATIBLE"))
+                            if (currRegressionTest.Status != TestStatus.AnalyseFailed
+                                && currRegressionTest.Status != TestStatus.InQueue
+                                && currRegressionTest.Status != TestStatus.AnalysePassed
+                                && currRegressionTest.Status != TestStatus.InCompatible)
                                 currRegressionTest.Status = lastRegRunRecord.Status;
                         }
                     }
@@ -328,10 +330,10 @@ namespace ATTM_API.Services
                     if (lastRegRunRecord != null)
                     {
                         regressionTest.LastRegressionRunRecord = lastRegRunRecord;
-                        if (!regressionTest.Status.ToUpper().Equals("ANALYSEFAILED")
-                            && !regressionTest.Status.ToUpper().Equals("INQUEUE")
-                            && !regressionTest.Status.ToUpper().Equals("ANALYSEPASSED")
-                            && !regressionTest.Status.ToUpper().Equals("INCOMPATIBLE"))
+                        if (regressionTest.Status != TestStatus.AnalyseFailed
+                            && regressionTest.Status != TestStatus.InQueue
+                            && regressionTest.Status != TestStatus.AnalysePassed
+                            && regressionTest.Status != TestStatus.InCompatible)
                             regressionTest.Status = lastRegRunRecord.Status;
                     }
                 }

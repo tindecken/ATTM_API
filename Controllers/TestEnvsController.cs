@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using ATTM_API.Models.Entities;
+using CommonModels;
 using Newtonsoft.Json.Linq;
 
 namespace ATTM_API.Controllers

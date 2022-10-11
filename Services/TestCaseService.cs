@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ATTM_API.Models.Entities;
+using CommonModels;
 using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json.Linq;
@@ -181,7 +182,7 @@ namespace ATTM_API.Services
                 if (regression != null)
                 {
                     var data = new JObject();
-                    data.Add("Status", lastRegressionTest.Status);
+                    data.Add("Status", lastRegressionTest.Status.ToString());
                     data.Add("Regression", regression.Name);
                     data.Add("Build", regression.Build);
                     data.Add("Issue", lastRegressionTest.Issue);
@@ -192,7 +193,7 @@ namespace ATTM_API.Services
                 else
                 {
                     var data = new JObject();
-                    data.Add("Status", lastRegressionTest.Status);
+                    data.Add("Status", lastRegressionTest.Status.ToString());
                     
                     result.Add("data", data);
                     result.Add("result", "success");

@@ -7,6 +7,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using CommonModels;
 
 namespace ATTM_API.Services
 {
@@ -33,7 +34,7 @@ namespace ATTM_API.Services
         public async Task<JObject> GetInQueueDevRecord()
         {
             JObject result = new JObject();
-            var devInQueues = await _devQueues.Find(dev => dev.QueueStatus == "InQueue").ToListAsync();
+            var devInQueues = await _devQueues.Find(dev => dev.QueueStatus == TestStatus.InQueue).ToListAsync();
             
             result.Add("count", devInQueues.Count);
             result.Add("result", "success");

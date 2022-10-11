@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ATTM_API.Models.Entities;
+using CommonModels;
 
 namespace ATTM_API.Services
 {
@@ -75,7 +76,7 @@ namespace ATTM_API.Services
                 Queue = testCase.Queue,
                 DontRunWithQueues = testCase.DontRunWithQueues,
                 Owner = testCase.Owner,
-                Status = "InQueue",
+                Status = TestStatus.InQueue
             };
 
             await _regressionTests.InsertOneAsync(regressionTest);
@@ -237,7 +238,7 @@ namespace ATTM_API.Services
                 }
 
                 var updatedComments = $"{currRegressionTest.Comments}\r\n{DateTime.UtcNow.ToString("yyyy MMM dd - HH:mm")} - {setRegressionQueueData.UpdateBy}: Re-run on Client: {setRegressionQueueData.ClientName}, HighPriority: {setRegressionQueueData.IsHighPriority}";
-                var update = Builders<RegressionTest>.Update.Set(regTest => regTest.Status, "InQueue")
+                var update = Builders<RegressionTest>.Update.Set(regTest => regTest.Status, TestStatus.InQueue)
                     .Set(regTest => regTest.IsHighPriority, setRegressionQueueData.IsHighPriority)
                     .Set(regTest => regTest.ClientName, setRegressionQueueData.ClientName)
                     .Set(regTest => regTest.Comments, updatedComments);
@@ -248,7 +249,7 @@ namespace ATTM_API.Services
                     JObject jObject = new JObject();
                     jObject["TestCase"] = updatedRegressionTest.TestCaseName;
                     jObject["Id"] = updatedRegressionTest.Id;
-                    jObject["Status"] = updatedRegressionTest.Status;
+                    jObject["Status"] = updatedRegressionTest.Status.ToString();
                     jObject["IsHighPriority"] = updatedRegressionTest.IsHighPriority;
                     jObject["ClientName"] = updatedRegressionTest.ClientName;
                     jObject["Comments"] = updatedRegressionTest.Comments;
@@ -302,7 +303,7 @@ namespace ATTM_API.Services
                     JObject jObject = new JObject();
                     jObject["TestCase"] = updatedRegressionTest.TestCaseName;
                     jObject["Id"] = updatedRegressionTest.Id;
-                    jObject["Status"] = updatedRegressionTest.Status;
+                    jObject["Status"] = updatedRegressionTest.Status.ToString();
                     jObject["Reason"] = regressionAnalyseStatus.Reason;
                     jObject["Issue"] = regressionAnalyseStatus.Issue;
                     jObject["Comments"] = updatedRegressionTest.Comments;

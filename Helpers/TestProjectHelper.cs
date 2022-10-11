@@ -18,6 +18,7 @@ using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using System.Diagnostics.Eventing.Reader;
 using System.Threading;
+using CommonModels;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
 
@@ -478,7 +479,7 @@ namespace ATTM_API.Helpers
                                     }
                                     else
                                     {
-                                        sBuilderKeywords.AppendLine($"\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"Keyword\", \"{tc.TestSteps[i].Keyword.Name}\");");
+                                        sBuilderKeywords.AppendLine($"\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");");
                                         sBuilderKeywords.Append("\t\t\t");
                                     }
                                     TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
@@ -539,7 +540,7 @@ namespace ATTM_API.Helpers
                                     TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
                                     sBuilderCleanUpKeywords.AppendLine($"AdditionalTearDown(() =>");
                                     sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
-                                    sBuilderCleanUpKeywords.AppendLine($"\t\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"Keyword\", \"{tc.TestSteps[i].Keyword.Name}\");");
+                                    sBuilderCleanUpKeywords.AppendLine($"\t\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");");
                                     sBuilderCleanUpKeywords.Append($"\t\t\t\t{aut.Name}_{ tc.TestSteps[i].KWFeature}.{ tc.TestSteps[i].Keyword.Name}(");
                                     foreach (TestParam param in tc.TestSteps[i].Params)
                                     {
@@ -860,7 +861,7 @@ namespace ATTM_API.Helpers
                                     }
                                     else
                                     {
-                                        sBuilderKeywords.AppendLine($"\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"Keyword\", \"{tc.TestSteps[i].Keyword.Name}\");");
+                                        sBuilderKeywords.AppendLine($"\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");");
                                         sBuilderKeywords.Append("\t\t\t");
                                     }
                                     TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
@@ -1004,7 +1005,7 @@ namespace ATTM_API.Helpers
                     TestCaseCodeName = tc.CodeName,
                     TestCaseName = tc.Name,
                     TestCaseFullName = $"TestProject.TestCases.{category.Name}.{testsuite.CodeName}.{tc.CodeName}",
-                    QueueStatus = "InQueue",
+                    QueueStatus = TestStatus.InQueue,
                     QueueType = string.Empty,
                     CreateAt = DateTime.UtcNow,
                     ClientName = testClient.Name,
