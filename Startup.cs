@@ -11,6 +11,9 @@ using ATTM_API.Helpers;
 using ATTM_API.SignalRHub;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
+using System.IO;
+using System.Reflection;
+using System;
 
 namespace ATTM_API
 {
@@ -36,6 +39,7 @@ namespace ATTM_API
             services.AddSingleton<IATTMAppSettings>(appSP =>
                 appSP.GetRequiredService<IOptions<ATTMAppSettings>>().Value);
             services.AddSingleton<CategoryService>();
+            services.AddSingleton<ConfigureService>();
             services.AddSingleton<TestSuiteService>();
             services.AddSingleton<TestGroupService>();
             services.AddSingleton<TestCaseService>();
@@ -63,6 +67,10 @@ namespace ATTM_API
                     Title = "ATTM API",
                     Version = "v1",
                 });
+                // Set the comments path for the Swagger JSON and UI.
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+                c.IncludeXmlComments(xmlPath);
             });
             services.AddSignalR().AddJsonProtocol(options =>
             {
@@ -76,11 +84,6 @@ namespace ATTM_API
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ATTM_FE API"));
-            }
-            else
-            {
                 app.UseSwagger();
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "ATTM_FE API"));
             }

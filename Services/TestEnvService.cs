@@ -106,7 +106,7 @@ namespace ATTM_API.Services
             // Create new record in collection TestEnvHistory
             await _testenvhistories.InsertOneAsync(testEnvHistory);
 
-            result.Add("message", "Update test environment !");
+            result.Add("message", "Updated test environment !");
             result.Add("result", "success");
             result.Add("data", JToken.FromObject(te));
             return result;

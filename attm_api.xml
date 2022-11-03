@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>ATTM_API</name>
+    </assembly>
+    <members>
+        <member name="M:ATTM_API.Controllers.ConfiguresController.Get">
+            <summary>
+            Get all configurations for the system in appSetting
+            </summary>
+        </member>
+    </members>
+</doc>

@@ -46,6 +46,14 @@ namespace ATTM_API.Helpers
         {
             
             var result = new JObject();
+
+            if (!Directory.Exists(_appSettings.TestProject)) {
+                result.Add("result", "error");
+                result.Add("data", null);
+                result.Add("message", $"Not found Test Project folder: {_appSettings.TestProject}");
+                return result;
+            }
+
             Regex rgStartSummary = new Regex(sPatternStartSummary, RegexOptions.IgnoreCase);
             Regex rgEndSummary = new Regex(sPatternEndSummary);
             Regex rgParam = new Regex(sPatternParam);

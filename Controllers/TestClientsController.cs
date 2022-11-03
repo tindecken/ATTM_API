@@ -21,7 +21,6 @@ namespace ATTM_API.Controllers
         }
 
         [HttpGet]
-        [Authorize]
         public ActionResult<List<TestClient>> Get() =>
             _testClientService.Get();
 
@@ -94,7 +93,7 @@ namespace ATTM_API.Controllers
             }
         }
         [HttpPost("save")]
-        public async Task<ActionResult<TestClient>> Save([FromBody] TestClient[] testClients)
+        public async Task<ActionResult<JObject>> Save([FromBody] TestClient[] testClients)
         {
             var response = await _testClientService.Save(testClients);
             if (response == null) return StatusCode(500, $"Internal server error.");
