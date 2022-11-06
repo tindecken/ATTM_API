@@ -21,6 +21,7 @@ using System.Threading;
 using CommonModels;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
+using Microsoft.IdentityModel.Tokens;
 
 namespace ATTM_API.Helpers
 {
@@ -417,7 +418,7 @@ namespace ATTM_API.Helpers
                         }
                         stringBuilder.AppendLine($"\t\t[WorkItem(\"{tc.WorkItem}\")]");
                         stringBuilder.AppendLine($"\t\t// {tc.Name}");
-                        stringBuilder.AppendLine($"\t\tpublic void {FirstLetterToUpper(tc.CodeName)}()");
+                        stringBuilder.AppendLine($"\t\tpublic async Task {FirstLetterToUpper(tc.CodeName)}()");
                         stringBuilder.AppendLine("\t\t{");
 
 
@@ -433,15 +434,15 @@ namespace ATTM_API.Helpers
                         List<TestStep> lstDistinctTestSteps = new List<TestStep>();
                         foreach (var testStep in tc.TestSteps)
                         {
-                            if (testStep.Keyword == null) continue; // Empty test step
-                            if (testStep.IsDisabled || testStep.IsComment || testStep.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
+                            if (string.IsNullOrEmpty(testStep.Keyword.Name)) continue; // Empty test step
+                            if (testStep.IsDisabled || testStep.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
                             bool containsItem = lstDistinctTestSteps.Any(item => item.KWFeature == testStep.KWFeature && item.TestAUTId == testStep.TestAUTId);
                             if (!containsItem) lstDistinctTestSteps.Add(testStep);
                         }
 
                         foreach (TestStep testStep in lstDistinctTestSteps)
                         {
-                            if (testStep.Keyword == null) continue; // Empty test step
+                            if (string.IsNullOrEmpty(testStep.Keyword.Name)) continue; // Empty test step
                             TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == testStep.TestAUTId).FirstOrDefaultAsync();
                             if (lstSupportBrowser.Contains(aut.Name))
                             {
@@ -455,7 +456,6 @@ namespace ATTM_API.Helpers
                             }
                         }
 
-                        stringBuilder.AppendLine("\t\t\t// ------------------------------------------------------");
                         stringBuilder.AppendLine();
 
                         StringBuilder sBuilderCleanUpKeywords = new StringBuilder();
@@ -468,59 +468,87 @@ namespace ATTM_API.Helpers
                             : $"Test case [{tc.Name}] - CleanUp at index: {indexCleanUp}");
                         //Hardcoded indexCleanUp in case of user doesn't use CleanUp in the test case
                         if (indexCleanUp == -1) indexCleanUp = int.MaxValue;
+
+                        // get devRunRecordId
+                        stringBuilder.AppendLine("\t\t\tvar devRunRecordId = TestContext.CurrentContext.Test.Properties.Get(\"DevRunRecordId\")?.ToString();");
+
                         for (int i = 0; i < tc.TestSteps.Count; i++)
                         {
-                            if (tc.TestSteps[i].Keyword == null) continue; // Empty test step
+                            if (string.IsNullOrEmpty(tc.TestSteps[i].Keyword.Name)) continue; // Empty test step
                             if (tc.TestSteps[i].Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
                             // BEFORE CLEANUP
                             if (i < indexCleanUp)
                             {
-                                if (tc.TestSteps[i].IsComment)
+                                // Keep TestStepID (to use for update TestStep: startDate, EndDate, status, ...) 
+                                var setProperty = $"TestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");";
+                                if (tc.TestSteps[i].IsDisabled)
                                 {
-                                    sBuilderKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
+                                    sBuilderKeywords.Append("\t\t\t// ");
+                                    sBuilderKeywords.AppendLine(setProperty);
+                                } else
+                                {
+                                    sBuilderKeywords.AppendLine($"\t\t\t{setProperty}");
+                                    
                                 }
-                                else
+
+                                var updateStartTestStep =
+                                    $"await MongoDBHelpers.StartRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
+
+                                sBuilderKeywords.AppendLine(tc.TestSteps[i].IsDisabled
+                                    ? $"\t\t\t// {updateStartTestStep}"
+                                    : $"\t\t\t{updateStartTestStep}");
+
+                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                if (!string.IsNullOrEmpty(tc.TestSteps[i].Description))
                                 {
-                                    if (tc.TestSteps[i].IsDisabled)
+                                    sBuilderKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Description}");
+                                }
+
+                                var sKWwithParams = $"{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(";
+
+                                if (tc.TestSteps[i].IsDisabled)
+                                {
+                                    sBuilderKeywords.Append($"\t\t\t// {sKWwithParams}");
+                                }
+                                else {
+                                    sBuilderKeywords.Append($"\t\t\t{sKWwithParams}");
+                                }
+                                foreach (TestParam param in tc.TestSteps[i].Params)
+                                {
+                                    if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
                                     {
-                                        sBuilderKeywords.Append("\t\t\t// ");
-                                    }
-                                    else
-                                    {
-                                        sBuilderKeywords.AppendLine($"\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");");
-                                        sBuilderKeywords.Append("\t\t\t");
-                                    }
-                                    TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                    sBuilderKeywords.Append($"{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
-                                    foreach (TestParam param in tc.TestSteps[i].Params)
-                                    {
-                                        if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                        if (string.IsNullOrEmpty(param.Value))
                                         {
-                                            if (string.IsNullOrEmpty(param.Value))
-                                            {
-                                                sBuilderKeywords.Append($"null");
-                                            }
-                                            else
-                                            {
-                                                sBuilderKeywords.Append($"\"{param.Value}\"");
-                                            }
+                                            sBuilderKeywords.Append($"null");
                                         }
                                         else
                                         {
-                                            if (string.IsNullOrEmpty(param.Value))
-                                            {
-                                                sBuilderKeywords.Append($"null, ");
-                                            }
-                                            else
-                                            {
-                                                sBuilderKeywords.Append($"\"{param.Value}\", ");
-                                            }
-
+                                            sBuilderKeywords.Append($"\"{param.Value}\"");
                                         }
                                     }
-                                    sBuilderKeywords.AppendLine(");");
-                                    sBuilderKeywords.AppendLine();
+                                    else
+                                    {
+                                        if (string.IsNullOrEmpty(param.Value))
+                                        {
+                                            sBuilderKeywords.Append($"null, ");
+                                        }
+                                        else
+                                        {
+                                            sBuilderKeywords.Append($"\"{param.Value}\", ");
+                                        }
+
+                                    }
                                 }
+                                sBuilderKeywords.AppendLine(");");
+
+                                var updatePassedTestStep =
+                                    $"await MongoDBHelpers.FinishRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
+
+                                sBuilderKeywords.AppendLine(tc.TestSteps[i].IsDisabled
+                                    ? $"\t\t\t// {updatePassedTestStep}"
+                                    : $"\t\t\t{updatePassedTestStep}");
+
+                                sBuilderKeywords.AppendLine();
                             }
                             //AFTER CLEANUP
                             else
@@ -531,53 +559,46 @@ namespace ATTM_API.Helpers
                                     isTearDownCommentAdded = true;
                                 }
 
-                                if (tc.TestSteps[i].IsComment)
+                                if (tc.TestSteps[i].IsDisabled)
                                 {
-                                    sBuilderCleanUpKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
+                                    sBuilderCleanUpKeywords.Append("\t\t\t// ");
                                 }
                                 else
                                 {
-                                    if (tc.TestSteps[i].IsDisabled)
+                                    sBuilderCleanUpKeywords.Append("\t\t\t");
+                                }
+                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                sBuilderCleanUpKeywords.AppendLine($"AdditionalTearDown(() =>");
+                                sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
+                                sBuilderCleanUpKeywords.AppendLine($"\t\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");");
+                                sBuilderCleanUpKeywords.Append($"\t\t\t\t{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+                                foreach (TestParam param in tc.TestSteps[i].Params)
+                                {
+                                    if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
                                     {
-                                        sBuilderCleanUpKeywords.Append("\t\t\t// ");
-                                    }
-                                    else
-                                    {
-                                        sBuilderCleanUpKeywords.Append("\t\t\t");
-                                    }
-                                    TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                    sBuilderCleanUpKeywords.AppendLine($"AdditionalTearDown(() =>");
-                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
-                                    sBuilderCleanUpKeywords.AppendLine($"\t\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");");
-                                    sBuilderCleanUpKeywords.Append($"\t\t\t\t{aut.Name}_{ tc.TestSteps[i].KWFeature}.{ tc.TestSteps[i].Keyword.Name}(");
-                                    foreach (TestParam param in tc.TestSteps[i].Params)
-                                    {
-                                        if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                        if (string.IsNullOrEmpty(param.Value))
                                         {
-                                            if (string.IsNullOrEmpty(param.Value))
-                                            {
-                                                sBuilderCleanUpKeywords.Append($"null");
-                                            }
-                                            else
-                                            {
-                                                sBuilderCleanUpKeywords.Append($"\"{param.Value}\"");
-                                            }
+                                            sBuilderCleanUpKeywords.Append($"null");
                                         }
                                         else
                                         {
-                                            if (string.IsNullOrEmpty(param.Value))
-                                            {
-                                                sBuilderCleanUpKeywords.Append($"null, ");
-                                            }
-                                            else
-                                            {
-                                                sBuilderCleanUpKeywords.Append($"\"{param.Value}\", ");
-                                            }
+                                            sBuilderCleanUpKeywords.Append($"\"{param.Value}\"");
                                         }
                                     }
-                                    sBuilderCleanUpKeywords.AppendLine(");");
-                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t});");
+                                    else
+                                    {
+                                        if (string.IsNullOrEmpty(param.Value))
+                                        {
+                                            sBuilderCleanUpKeywords.Append($"null, ");
+                                        }
+                                        else
+                                        {
+                                            sBuilderCleanUpKeywords.Append($"\"{param.Value}\", ");
+                                        }
+                                    }
                                 }
+                                sBuilderCleanUpKeywords.AppendLine(");");
+                                sBuilderCleanUpKeywords.AppendLine("\t\t\t});");
                             }
                         }
 
@@ -818,7 +839,7 @@ namespace ATTM_API.Helpers
                         List<TestStep> lstDistinctTestSteps = new List<TestStep>();
                         foreach (var testStep in tc.TestSteps)
                         {
-                            if (testStep.IsDisabled || testStep.IsComment || testStep.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
+                            if (testStep.IsDisabled || testStep.Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
                             bool containsItem = lstDistinctTestSteps.Any(item => item.KWFeature == testStep.KWFeature && item.TestAUTId == testStep.TestAUTId);
                             if (!containsItem) lstDistinctTestSteps.Add(testStep);
                         }
@@ -857,51 +878,44 @@ namespace ATTM_API.Helpers
                             // BEFORE CLEANUP
                             if (i < indexCleanUp)
                             {
-                                if (tc.TestSteps[i].IsComment)
+                                if (tc.TestSteps[i].IsDisabled)
                                 {
-                                    sBuilderKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
+                                    sBuilderKeywords.Append("\t\t\t// ");
                                 }
                                 else
                                 {
-                                    if (tc.TestSteps[i].IsDisabled)
+                                    sBuilderKeywords.AppendLine($"\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");");
+                                    sBuilderKeywords.Append("\t\t\t");
+                                }
+                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                sBuilderKeywords.Append($"{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+                                foreach (TestParam param in tc.TestSteps[i].Params)
+                                {
+                                    if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
                                     {
-                                        sBuilderKeywords.Append("\t\t\t// ");
-                                    }
-                                    else
-                                    {
-                                        sBuilderKeywords.AppendLine($"\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");");
-                                        sBuilderKeywords.Append("\t\t\t");
-                                    }
-                                    TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                    sBuilderKeywords.Append($"{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
-                                    foreach (TestParam param in tc.TestSteps[i].Params)
-                                    {
-                                        if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                        if (string.IsNullOrEmpty(param.Value))
                                         {
-                                            if (string.IsNullOrEmpty(param.Value))
-                                            {
-                                                sBuilderKeywords.Append($"null");
-                                            }
-                                            else
-                                            {
-                                                sBuilderKeywords.Append($"\"{param.Value}\"");
-                                            }
+                                            sBuilderKeywords.Append($"null");
                                         }
                                         else
                                         {
-                                            if (string.IsNullOrEmpty(param.Value))
-                                            {
-                                                sBuilderKeywords.Append($"null, ");
-                                            }
-                                            else
-                                            {
-                                                sBuilderKeywords.Append($"\"{param.Value}\", ");
-                                            }
-
+                                            sBuilderKeywords.Append($"\"{param.Value}\"");
                                         }
                                     }
-                                    sBuilderKeywords.AppendLine(");");
+                                    else
+                                    {
+                                        if (string.IsNullOrEmpty(param.Value))
+                                        {
+                                            sBuilderKeywords.Append($"null, ");
+                                        }
+                                        else
+                                        {
+                                            sBuilderKeywords.Append($"\"{param.Value}\", ");
+                                        }
+
+                                    }
                                 }
+                                sBuilderKeywords.AppendLine(");");
                             }
                             //AFTER CLEANUP
                             else
@@ -912,53 +926,46 @@ namespace ATTM_API.Helpers
                                     isTearDownCommentAdded = true;
                                 }
 
-                                if (tc.TestSteps[i].IsComment)
+                                if (tc.TestSteps[i].IsDisabled)
                                 {
-                                    sBuilderCleanUpKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Params[0].Value}");
+                                    sBuilderCleanUpKeywords.Append("\t\t\t// ");
                                 }
                                 else
                                 {
-                                    if (tc.TestSteps[i].IsDisabled)
+                                    sBuilderCleanUpKeywords.Append("\t\t\t");
+                                }
+                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                sBuilderCleanUpKeywords.AppendLine($"AdditionalTearDown(() =>");
+                                sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
+                                sBuilderCleanUpKeywords.AppendLine($"\t\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"Keyword\", \"{tc.TestSteps[i].Keyword.Name}\");");
+                                sBuilderCleanUpKeywords.Append($"\t\t\t\t{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+                                foreach (TestParam param in tc.TestSteps[i].Params)
+                                {
+                                    if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
                                     {
-                                        sBuilderCleanUpKeywords.Append("\t\t\t// ");
-                                    }
-                                    else
-                                    {
-                                        sBuilderCleanUpKeywords.Append("\t\t\t");
-                                    }
-                                    TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                    sBuilderCleanUpKeywords.AppendLine($"AdditionalTearDown(() =>");
-                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
-                                    sBuilderCleanUpKeywords.AppendLine($"\t\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"Keyword\", \"{tc.TestSteps[i].Keyword.Name}\");");
-                                    sBuilderCleanUpKeywords.Append($"\t\t\t\t{aut.Name}_{ tc.TestSteps[i].KWFeature}.{ tc.TestSteps[i].Keyword.Name}(");
-                                    foreach (TestParam param in tc.TestSteps[i].Params)
-                                    {
-                                        if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                        if (string.IsNullOrEmpty(param.Value))
                                         {
-                                            if (string.IsNullOrEmpty(param.Value))
-                                            {
-                                                sBuilderCleanUpKeywords.Append($"null");
-                                            }
-                                            else
-                                            {
-                                                sBuilderCleanUpKeywords.Append($"\"{param.Value}\"");
-                                            }
+                                            sBuilderCleanUpKeywords.Append($"null");
                                         }
                                         else
                                         {
-                                            if (string.IsNullOrEmpty(param.Value))
-                                            {
-                                                sBuilderCleanUpKeywords.Append($"null, ");
-                                            }
-                                            else
-                                            {
-                                                sBuilderCleanUpKeywords.Append($"\"{param.Value}\", ");
-                                            }
+                                            sBuilderCleanUpKeywords.Append($"\"{param.Value}\"");
                                         }
                                     }
-                                    sBuilderCleanUpKeywords.AppendLine(");");
-                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t});");
+                                    else
+                                    {
+                                        if (string.IsNullOrEmpty(param.Value))
+                                        {
+                                            sBuilderCleanUpKeywords.Append($"null, ");
+                                        }
+                                        else
+                                        {
+                                            sBuilderCleanUpKeywords.Append($"\"{param.Value}\", ");
+                                        }
+                                    }
                                 }
+                                sBuilderCleanUpKeywords.AppendLine(");");
+                                sBuilderCleanUpKeywords.AppendLine("\t\t\t});");
                             }
                         }
 
