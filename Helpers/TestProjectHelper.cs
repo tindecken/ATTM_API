@@ -462,7 +462,7 @@ namespace ATTM_API.Helpers
                         StringBuilder sBuilderKeywords = new StringBuilder();
 
                         //index of CleanUp Keyword
-                        int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Keyword != null && ts.Keyword.Name.ToUpper().Equals("CLEANUP"));
+                        int indexCleanUp = tc.TestSteps.FindIndex(ts => ts.Keyword != null && ts.Keyword.Name.ToUpper().Equals("CLEANUP") && ts.IsDisabled == false);
                         Logger.Info(indexCleanUp == -1
                             ? $"Test case [{tc.Name}] has no CleanUp step"
                             : $"Test case [{tc.Name}] - CleanUp at index: {indexCleanUp}");
@@ -558,20 +558,26 @@ namespace ATTM_API.Helpers
                                     sBuilderCleanUpKeywords.AppendLine("\t\t\t// Teardown");
                                     isTearDownCommentAdded = true;
                                 }
-
-                                if (tc.TestSteps[i].IsDisabled)
-                                {
-                                    sBuilderCleanUpKeywords.Append("\t\t\t// ");
-                                }
-                                else
-                                {
-                                    sBuilderCleanUpKeywords.Append("\t\t\t");
-                                }
                                 TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                sBuilderCleanUpKeywords.AppendLine($"AdditionalTearDown(() =>");
+
+                                sBuilderCleanUpKeywords.AppendLine("\t\t\tAdditionalTearDown(async () =>");
+
+                                var updateStartTestStep =
+                                    $"await MongoDBHelpers.StartRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
                                 sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
-                                sBuilderCleanUpKeywords.AppendLine($"\t\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");");
-                                sBuilderCleanUpKeywords.Append($"\t\t\t\t{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+
+                                sBuilderCleanUpKeywords.AppendLine(tc.TestSteps[i].IsDisabled
+                                    ? $"\t\t\t\t// TestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");"
+                                    : $"\t\t\t\tTestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");");
+
+                                sBuilderCleanUpKeywords.AppendLine(tc.TestSteps[i].IsDisabled
+                                    ? $"\t\t\t\t// {updateStartTestStep}"
+                                    : $"\t\t\t\t{updateStartTestStep}");
+
+                                sBuilderCleanUpKeywords.Append(tc.TestSteps[i].IsDisabled
+                                    ? $"\t\t\t\t// {aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}("
+                                    : $"\t\t\t\t{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(");
+
                                 foreach (TestParam param in tc.TestSteps[i].Params)
                                 {
                                     if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
@@ -598,12 +604,19 @@ namespace ATTM_API.Helpers
                                     }
                                 }
                                 sBuilderCleanUpKeywords.AppendLine(");");
+                                
+                                var updatePassedTestStep =
+                                    $"await MongoDBHelpers.FinishRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
+
+                                sBuilderCleanUpKeywords.AppendLine(tc.TestSteps[i].IsDisabled
+                                    ? $"\t\t\t\t// {updatePassedTestStep}"
+                                    : $"\t\t\t\t{updatePassedTestStep}");
+                                sBuilderCleanUpKeywords.AppendLine();
                                 sBuilderCleanUpKeywords.AppendLine("\t\t\t});");
                             }
                         }
 
                         stringBuilder.Append(sBuilderCleanUpKeywords);
-                        stringBuilder.AppendLine("\t\t\t// ------------------------------------------------------");
                         stringBuilder.AppendLine();
 
                         stringBuilder.Append(sBuilderKeywords);
@@ -1014,17 +1027,21 @@ namespace ATTM_API.Helpers
                 JObject queueObject = new JObject();
                 var category = await categories.Find<Category>(cat => cat.Id == tc.CategoryId).FirstOrDefaultAsync();
                 var testsuite = await testsuites.Find<TestSuite>(ts => ts.Id == tc.TestSuiteId).FirstOrDefaultAsync();
+                //upperCase first character of CodeName
+
+                var CodeName = char.ToUpper(tc.CodeName[0]) + tc.CodeName.Substring(1);
+
                 DevQueue devQueue = new DevQueue
                 {
                     TestCaseId = tc.Id,
-                    TestCaseCodeName = tc.CodeName,
+                    TestCaseCodeName = CodeName,
                     TestCaseName = tc.Name,
-                    TestCaseFullName = $"TestProject.TestCases.{category.Name}.{testsuite.CodeName}.{tc.CodeName}",
+                    TestCaseFullName = $"TestProject.TestCases.{category.Name}.{testsuite.CodeName}.{CodeName}",
                     QueueStatus = TestStatus.InQueue,
                     QueueType = string.Empty,
                     CreateAt = DateTime.UtcNow,
                     ClientName = testClient.Name,
-                    IsHighPriority = false
+                    IsHighPriority = false,
                 };
                 var filters = Builders<DevQueue>.Filter.Eq("TestCaseId", tc.Id)
                               & Builders<DevQueue>.Filter.Eq("QueueStatus", "InQueue")
@@ -1135,13 +1152,12 @@ namespace ATTM_API.Helpers
             }
             try
             {
-                if (Directory.Exists(destDir))
+                if (!Directory.Exists(destDir))
                 {
-                    Directory.Delete(destDir, true);
+                    result.Add("result", "error");
+                    result.Add("message", $"Directory not found {destDir}");
+                    return result;
                 }
-
-                Directory.CreateDirectory(destDir);
-
                 foreach (var innerDir in Directory.GetDirectories(sourceDir, "*.*", SearchOption.AllDirectories))
                 {
                     Directory.CreateDirectory(innerDir.Replace(sourceDir, destDir));
@@ -1207,10 +1223,20 @@ namespace ATTM_API.Helpers
         {
             JObject result = new JObject();
 
+            var arguments = string.Empty;
+            if (string.IsNullOrEmpty(testClient.User) || string.IsNullOrEmpty(testClient.Password))
+            {
+                arguments = $@"\\{testClient.IPAddress} -accepteula -nobanner -e {processName}";
+            }
+            else
+            {
+                arguments = $@"\\{testClient.IPAddress} -accepteula -nobanner -u {testClient.User} -p {testClient.Password} -e {processName}";
+            }
+            
             StringBuilder sbBuilder = new StringBuilder();
             ProcessStartInfo startInfo = new ProcessStartInfo();
             startInfo.FileName = $@"{appSettings.PSToolsFolder}\pslist.exe";
-            startInfo.Arguments = $@"\\{testClient.IPAddress} -accepteula -nobanner -u {testClient.User} -p {testClient.Password} -e {processName}";
+            startInfo.Arguments = arguments;
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
@@ -1236,10 +1262,10 @@ namespace ATTM_API.Helpers
             }
             else if (sbBuilder.ToString().Contains($"process {processName} was not found"))
             {
-                result.Add("message", $"{processName} is not running on {testClient.Name}!");
+                result.Add("message", $"{processName} is not running on client: {testClient.Name}!");
             } else
             {
-                result.Add("message", $"{processName} is not running on {testClient.Name}!");
+                result.Add("message", $"{processName} is not running on client: {testClient.Name}!");
             }
             result.Add("result", "success");
             result.Add("data", sbBuilder.ToString());
