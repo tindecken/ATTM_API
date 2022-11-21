@@ -7,10 +7,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ATTM_API", "ATTM_API.csproj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CommonModels", "..\CommonModels\CommonModels.csproj", "{7A0B177C-1FD6-41D5-9347-D3BA64FC23E7}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Runner", "..\ATTM_Runner\Runner.csproj", "{8ECD458F-E77F-43BD-B11A-3DFD5024F76B}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestProject", "..\ATTM_TestProject\TestProject.csproj", "{F7104D8B-6B73-4EF4-AF41-EBDE58CE043E}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,14 +21,6 @@ Global
 		{7A0B177C-1FD6-41D5-9347-D3BA64FC23E7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7A0B177C-1FD6-41D5-9347-D3BA64FC23E7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7A0B177C-1FD6-41D5-9347-D3BA64FC23E7}.Release|Any CPU.Build.0 = Release|Any CPU
-		{8ECD458F-E77F-43BD-B11A-3DFD5024F76B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{8ECD458F-E77F-43BD-B11A-3DFD5024F76B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{8ECD458F-E77F-43BD-B11A-3DFD5024F76B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{8ECD458F-E77F-43BD-B11A-3DFD5024F76B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{F7104D8B-6B73-4EF4-AF41-EBDE58CE043E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{F7104D8B-6B73-4EF4-AF41-EBDE58CE043E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{F7104D8B-6B73-4EF4-AF41-EBDE58CE043E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{F7104D8B-6B73-4EF4-AF41-EBDE58CE043E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

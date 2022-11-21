@@ -343,7 +343,6 @@ namespace ATTM_API.Helpers
                 foreach (var testcase in lstTestCases)
                 {
                     if (!testcase.TestSuiteId.Equals(tsId)) continue;
-                    Logger.Debug($"TestCase: {JsonConvert.SerializeObject(testcase)}");
                     var category = categories.Find<Category>(cat => cat.Id == testcase.CategoryId).FirstOrDefault();
                     var testGroup = testgroups.Find<TestGroup>(tg => tg.Id == testcase.TestGroupId).FirstOrDefault();
                     // Create Category folder if not exist
@@ -418,7 +417,7 @@ namespace ATTM_API.Helpers
                         }
                         stringBuilder.AppendLine($"\t\t[WorkItem(\"{tc.WorkItem}\")]");
                         stringBuilder.AppendLine($"\t\t// {tc.Name}");
-                        stringBuilder.AppendLine($"\t\tpublic async Task {FirstLetterToUpper(tc.CodeName)}()");
+                        stringBuilder.AppendLine($"\t\tpublic void {FirstLetterToUpper(tc.CodeName)}()");
                         stringBuilder.AppendLine("\t\t{");
 
 
@@ -472,99 +471,104 @@ namespace ATTM_API.Helpers
                         // get devRunRecordId
                         stringBuilder.AppendLine("\t\t\tvar devRunRecordId = TestContext.CurrentContext.Test.Properties.Get(\"DevRunRecordId\")?.ToString();");
 
+                        // TestSteps before cleanUp (main testSteps)
                         for (int i = 0; i < tc.TestSteps.Count; i++)
                         {
                             if (string.IsNullOrEmpty(tc.TestSteps[i].Keyword.Name)) continue; // Empty test step
                             if (tc.TestSteps[i].Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
-                            // BEFORE CLEANUP
-                            if (i < indexCleanUp)
+                            if (i >= indexCleanUp) continue;
+                            // Keep TestStepID (to use for update TestStep: startDate, EndDate, status, ...) 
+                            var setProperty = $"TestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");";
+                            if (tc.TestSteps[i].IsDisabled)
                             {
-                                // Keep TestStepID (to use for update TestStep: startDate, EndDate, status, ...) 
-                                var setProperty = $"TestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");";
-                                if (tc.TestSteps[i].IsDisabled)
-                                {
-                                    sBuilderKeywords.Append("\t\t\t// ");
-                                    sBuilderKeywords.AppendLine(setProperty);
-                                } else
-                                {
-                                    sBuilderKeywords.AppendLine($"\t\t\t{setProperty}");
-                                    
-                                }
+                                sBuilderKeywords.Append("\t\t\t// ");
+                                sBuilderKeywords.AppendLine(setProperty);
+                            }
+                            else
+                            {
+                                sBuilderKeywords.AppendLine($"\t\t\t{setProperty}");
 
-                                var updateStartTestStep =
-                                    $"await MongoDBHelpers.StartRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
+                            }
 
-                                sBuilderKeywords.AppendLine(tc.TestSteps[i].IsDisabled
-                                    ? $"\t\t\t// {updateStartTestStep}"
-                                    : $"\t\t\t{updateStartTestStep}");
+                            var updateStartTestStep =
+                                $"MongoDBHelpers.StartRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
 
-                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
-                                if (!string.IsNullOrEmpty(tc.TestSteps[i].Description))
+                            sBuilderKeywords.AppendLine(tc.TestSteps[i].IsDisabled
+                                ? $"\t\t\t// {updateStartTestStep}"
+                                : $"\t\t\t{updateStartTestStep}");
+
+                            TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                            if (!string.IsNullOrEmpty(tc.TestSteps[i].Description))
+                            {
+                                sBuilderKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Description}");
+                            }
+
+                            var sKWwithParams = $"{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(";
+
+                            if (tc.TestSteps[i].IsDisabled)
+                            {
+                                sBuilderKeywords.Append($"\t\t\t// {sKWwithParams}");
+                            }
+                            else
+                            {
+                                sBuilderKeywords.Append($"\t\t\t{sKWwithParams}");
+                            }
+                            foreach (TestParam param in tc.TestSteps[i].Params)
+                            {
+                                if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
                                 {
-                                    sBuilderKeywords.AppendLine($"\t\t\t// {tc.TestSteps[i].Description}");
-                                }
-
-                                var sKWwithParams = $"{aut.Name}_{tc.TestSteps[i].KWFeature}.{tc.TestSteps[i].Keyword.Name}(";
-
-                                if (tc.TestSteps[i].IsDisabled)
-                                {
-                                    sBuilderKeywords.Append($"\t\t\t// {sKWwithParams}");
-                                }
-                                else {
-                                    sBuilderKeywords.Append($"\t\t\t{sKWwithParams}");
-                                }
-                                foreach (TestParam param in tc.TestSteps[i].Params)
-                                {
-                                    if (tc.TestSteps[i].Params.IndexOf(param) == tc.TestSteps[i].Params.Count - 1)
+                                    if (string.IsNullOrEmpty(param.Value))
                                     {
-                                        if (string.IsNullOrEmpty(param.Value))
-                                        {
-                                            sBuilderKeywords.Append($"null");
-                                        }
-                                        else
-                                        {
-                                            sBuilderKeywords.Append($"\"{param.Value}\"");
-                                        }
+                                        sBuilderKeywords.Append($"null");
                                     }
                                     else
                                     {
-                                        if (string.IsNullOrEmpty(param.Value))
-                                        {
-                                            sBuilderKeywords.Append($"null, ");
-                                        }
-                                        else
-                                        {
-                                            sBuilderKeywords.Append($"\"{param.Value}\", ");
-                                        }
-
+                                        sBuilderKeywords.Append($"\"{param.Value}\"");
                                     }
                                 }
-                                sBuilderKeywords.AppendLine(");");
-
-                                var updatePassedTestStep =
-                                    $"await MongoDBHelpers.FinishRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
-
-                                sBuilderKeywords.AppendLine(tc.TestSteps[i].IsDisabled
-                                    ? $"\t\t\t// {updatePassedTestStep}"
-                                    : $"\t\t\t{updatePassedTestStep}");
-
-                                sBuilderKeywords.AppendLine();
-                            }
-                            //AFTER CLEANUP
-                            else
-                            {
-                                if (!isTearDownCommentAdded)
+                                else
                                 {
-                                    sBuilderCleanUpKeywords.AppendLine("\t\t\t// Teardown");
-                                    isTearDownCommentAdded = true;
-                                }
-                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
+                                    if (string.IsNullOrEmpty(param.Value))
+                                    {
+                                        sBuilderKeywords.Append($"null, ");
+                                    }
+                                    else
+                                    {
+                                        sBuilderKeywords.Append($"\"{param.Value}\", ");
+                                    }
 
-                                sBuilderCleanUpKeywords.AppendLine("\t\t\tAdditionalTearDown(async () =>");
+                                }
+                            }
+                            sBuilderKeywords.AppendLine(");");
+
+                            var updatePassedTestStep =
+                                $"MongoDBHelpers.FinishRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
+
+                            sBuilderKeywords.AppendLine(tc.TestSteps[i].IsDisabled
+                                ? $"\t\t\t// {updatePassedTestStep}"
+                                : $"\t\t\t{updatePassedTestStep}");
+
+                            sBuilderKeywords.AppendLine();
+                        }
+
+
+                        // TestSteps in cleanUp
+                        if (indexCleanUp >= 0 && indexCleanUp != int.MaxValue)
+                        {
+                            sBuilderCleanUpKeywords.AppendLine("\t\t\t// Teardown");
+                            sBuilderCleanUpKeywords.AppendLine("\t\t\tAdditionalTearDown(async () =>");
+                            sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
+                            for (int i = 0; i < tc.TestSteps.Count; i++)
+                            {
+                                if (string.IsNullOrEmpty(tc.TestSteps[i].Keyword.Name)) continue; // Empty test step
+                                if (tc.TestSteps[i].Keyword.Name.ToUpper().Equals("CLEANUP")) continue;
+                                if (i < indexCleanUp) continue;
+
+                                
+                                TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
 
                                 var updateStartTestStep =
                                     $"await MongoDBHelpers.StartRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
-                                sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
 
                                 sBuilderCleanUpKeywords.AppendLine(tc.TestSteps[i].IsDisabled
                                     ? $"\t\t\t\t// TestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");"
@@ -604,7 +608,7 @@ namespace ATTM_API.Helpers
                                     }
                                 }
                                 sBuilderCleanUpKeywords.AppendLine(");");
-                                
+
                                 var updatePassedTestStep =
                                     $"await MongoDBHelpers.FinishRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
 
@@ -612,8 +616,8 @@ namespace ATTM_API.Helpers
                                     ? $"\t\t\t\t// {updatePassedTestStep}"
                                     : $"\t\t\t\t{updatePassedTestStep}");
                                 sBuilderCleanUpKeywords.AppendLine();
-                                sBuilderCleanUpKeywords.AppendLine("\t\t\t});");
                             }
+                            sBuilderCleanUpKeywords.AppendLine("\t\t\t});");
                         }
 
                         stringBuilder.Append(sBuilderCleanUpKeywords);
