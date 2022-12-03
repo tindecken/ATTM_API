@@ -556,7 +556,7 @@ namespace ATTM_API.Helpers
                         if (indexCleanUp >= 0 && indexCleanUp != int.MaxValue)
                         {
                             sBuilderCleanUpKeywords.AppendLine("\t\t\t// Teardown");
-                            sBuilderCleanUpKeywords.AppendLine("\t\t\tAdditionalTearDown(async () =>");
+                            sBuilderCleanUpKeywords.AppendLine("\t\t\tAdditionalTearDown(() =>");
                             sBuilderCleanUpKeywords.AppendLine("\t\t\t{");
                             for (int i = 0; i < tc.TestSteps.Count; i++)
                             {
@@ -568,7 +568,7 @@ namespace ATTM_API.Helpers
                                 TestAUT aut = await testAUTs.Find<TestAUT>(aut => aut.Id == tc.TestSteps[i].TestAUTId).FirstOrDefaultAsync();
 
                                 var updateStartTestStep =
-                                    $"await MongoDBHelpers.StartRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
+                                    $"MongoDBHelpers.StartRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
 
                                 sBuilderCleanUpKeywords.AppendLine(tc.TestSteps[i].IsDisabled
                                     ? $"\t\t\t\t// TestExecutionContext.CurrentContext.CurrentTest.Properties.Set(\"TestStepUUID\", \"{tc.TestSteps[i].UUID}\");"
@@ -610,7 +610,7 @@ namespace ATTM_API.Helpers
                                 sBuilderCleanUpKeywords.AppendLine(");");
 
                                 var updatePassedTestStep =
-                                    $"await MongoDBHelpers.FinishRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
+                                    $"MongoDBHelpers.FinishRunningTestStepDev(devRunRecordId, \"{tc.TestSteps[i].UUID}\");";
 
                                 sBuilderCleanUpKeywords.AppendLine(tc.TestSteps[i].IsDisabled
                                     ? $"\t\t\t\t// {updatePassedTestStep}"
@@ -1239,12 +1239,15 @@ namespace ATTM_API.Helpers
             
             StringBuilder sbBuilder = new StringBuilder();
             ProcessStartInfo startInfo = new ProcessStartInfo();
+            startInfo.WorkingDirectory = appSettings.PSToolsFolder;
             startInfo.FileName = $@"{appSettings.PSToolsFolder}\pslist.exe";
             startInfo.Arguments = arguments;
             startInfo.UseShellExecute = false;
             startInfo.RedirectStandardOutput = true;
             startInfo.RedirectStandardError = true;
 
+            Console.WriteLine($"startInfo.FileName: {startInfo.FileName}");
+            Console.WriteLine($"startInfo.WorkingDirectory: {startInfo.WorkingDirectory}");
             using (Process process = Process.Start(startInfo))
             {
                 using (StreamReader reader = process.StandardOutput)
