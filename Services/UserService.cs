@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using ATTM_API.Models;
 using ATTM_API.Helpers;
@@ -33,15 +34,32 @@ namespace ATTM_API.Services
         public AuthenticateResponse Authenticate(AuthenticateRequest model)
         {
             Logger.Info($"User: {JsonConvert.SerializeObject(model)}");
-            var user = _users.Find<User>(user => user.Username == model.Username && user.Password == model.Password).FirstOrDefault();
-
+            var hash = "rivaldo";
+            var user = _users.Find<User>(user => user.Username == model.Username).FirstOrDefault();
             // return null if user not found
             if (user == null) return null;
 
-            // authentication successful so generate jwt token
-            var token = generateJwtToken(user);
+            byte[] data = Convert.FromBase64String(user.Password);
+            MD5 md5 = MD5.Create();
+            var tripDes = TripleDES.Create();
+            tripDes.Key = md5.ComputeHash(Encoding.UTF8.GetBytes(hash));
+            tripDes.Mode = CipherMode.ECB;
+            
+            ICryptoTransform transform = tripDes.CreateDecryptor();
+            byte[] results = transform.TransformFinalBlock(data, 0, data.Length);
+            var decryptedPassword = Encoding.UTF8.GetString(results);
 
-            return new AuthenticateResponse(user, token);
+            if (decryptedPassword.Equals(model.Password))
+            {
+                // authentication successful so generate jwt token
+                var token = generateJwtToken(user);
+
+                return new AuthenticateResponse(user, token);
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public List<User> GetAll() =>

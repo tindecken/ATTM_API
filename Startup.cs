@@ -93,10 +93,11 @@ namespace ATTM_API
             {
                 var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
                 var exception = exceptionHandlerPathFeature.Error;
-
+                context.Response.StatusCode = 300;
                 await context.Response.WriteAsJsonAsync(new
                 {
                     error = exception.Message,
+                    
                 });
             }));
             app.UseRouting();
