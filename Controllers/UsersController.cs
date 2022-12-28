@@ -2,6 +2,9 @@
 using ATTM_API.Models;
 using ATTM_API.Services;
 using Microsoft.AspNetCore.Cors;
+using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
+using ATTM_API.Models.Entities;
 
 namespace ATTM_API.Controllers
 {
@@ -34,6 +37,22 @@ namespace ATTM_API.Controllers
         {
             var users = _userService.GetAll();
             return Ok(users);
+        }
+
+        [HttpPost("changepassword")]
+        public async Task<ActionResult<JObject>> ChangePassword([FromBody] ChangePasswordData changePasswordData)
+        {
+            var response = await _userService.ChangePassword(changePasswordData);
+            if (response == null) return StatusCode(500, $"Internal server error.");
+            var result = response.GetValue("result").ToString();
+            if (result.Equals("success"))
+            {
+                return StatusCode(200, response);
+            }
+            else
+            {
+                return StatusCode(500, response);
+            }
         }
     }
 }

@@ -12,6 +12,11 @@ using ATTM_API.Helpers;
 using CommonModels;
 using MongoDB.Driver;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
+using ATTM_API.Models.Entities;
+using System.Text.Unicode;
+using Microsoft.AspNetCore.Http;
 
 namespace ATTM_API.Services
 {
@@ -34,7 +39,7 @@ namespace ATTM_API.Services
         public AuthenticateResponse Authenticate(AuthenticateRequest model)
         {
             Logger.Info($"User: {JsonConvert.SerializeObject(model)}");
-            var hash = "rivaldo";
+
             var user = _users.Find<User>(user => user.Username == model.Username).FirstOrDefault();
             // return null if user not found
             if (user == null) return null;
@@ -42,7 +47,7 @@ namespace ATTM_API.Services
             byte[] data = Convert.FromBase64String(user.Password);
             MD5 md5 = MD5.Create();
             var tripDes = TripleDES.Create();
-            tripDes.Key = md5.ComputeHash(Encoding.UTF8.GetBytes(hash));
+            tripDes.Key = md5.ComputeHash(Encoding.UTF8.GetBytes(_secret));
             tripDes.Mode = CipherMode.ECB;
             
             ICryptoTransform transform = tripDes.CreateDecryptor();
@@ -60,6 +65,74 @@ namespace ATTM_API.Services
             {
                 return null;
             }
+        }
+
+        public async Task<JObject> ChangePassword(ChangePasswordData changePasswordData)
+        {
+            // Get regression test
+            JObject result = new JObject();
+
+            // Check New Password and Confirm Password is the same
+            if (!changePasswordData.NewPassword.Equals(changePasswordData.ConfirmNewPassword))
+            {
+                result.Add("result", "error");
+                result.Add("message", "New password and confirm password are not the same!");
+                return result;
+            }
+
+            // Check if CurrentPassword is the same with new Password
+            if (changePasswordData.CurrentPassword.Equals(changePasswordData.NewPassword))
+            {
+                result.Add("result", "error");
+                result.Add("message", "Current password and new password are the same!");
+                return result;
+            }
+
+            var user = _users.Find<User>(user => user.Id == changePasswordData.UserId).FirstOrDefault();
+            if (user == null)
+            {
+                result.Add("result", "error");
+                result.Add("message", "User not found!");
+                return result;
+            }
+
+            //Check current password is correct or not
+            byte[] data = Convert.FromBase64String(user.Password);
+            MD5 md5 = MD5.Create();
+            var tripDes = TripleDES.Create();
+            tripDes.Key = md5.ComputeHash(Encoding.UTF8.GetBytes(_secret));
+            tripDes.Mode = CipherMode.ECB;
+
+            ICryptoTransform transform = tripDes.CreateDecryptor();
+            byte[] results = transform.TransformFinalBlock(data, 0, data.Length);
+            var decryptedPassword = Encoding.UTF8.GetString(results);
+
+            if (!decryptedPassword.Equals(changePasswordData.CurrentPassword))
+            {
+                result.Add("result", "error");
+                result.Add("message", "Current password is incorrect!");
+                return result;
+            }
+
+            // Change password
+            // Encrypt new password
+            var tripDes2 = TripleDES.Create();
+            tripDes2.Key = md5.ComputeHash(Encoding.UTF8.GetBytes(_secret));
+            tripDes2.Mode = CipherMode.ECB;
+            tripDes2.Padding = PaddingMode.PKCS7;
+            byte[] DataToEncrypt = UTF8Encoding.UTF8.GetBytes(changePasswordData.NewPassword);
+            ICryptoTransform cTransform = tripDes2.CreateEncryptor();
+            byte[] resultArray = cTransform.TransformFinalBlock(DataToEncrypt, 0, DataToEncrypt.Length);
+
+            var filter = Builders<User>.Filter.Eq("Id", changePasswordData.UserId);
+            var update = Builders<User>.Update.Set("Password", Convert.ToBase64String(resultArray));
+            await _users.UpdateOneAsync(filter, update);
+            
+
+            result.Add("result", "success");
+            result.Add("data", null);
+            result.Add("message", $"Change password successful.");
+            return result;
         }
 
         public List<User> GetAll() =>

@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Http;
 using System.IO;
 using System.Reflection;
 using System;
+using ATTM_API.Middlewares;
 
 namespace ATTM_API
 {
@@ -89,17 +90,19 @@ namespace ATTM_API
             }
 
             loggerFactory.AddLog4Net();
-            app.UseExceptionHandler(a => a.Run(async context =>
-            {
-                var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
-                var exception = exceptionHandlerPathFeature.Error;
-                context.Response.StatusCode = 300;
-                await context.Response.WriteAsJsonAsync(new
-                {
-                    error = exception.Message,
-                    
-                });
-            }));
+            app.UseMiddleware<EnableRequestRewindMiddleware>();
+            app.UseMiddleware<JwtMiddleware>();
+            app.UseMiddleware<ExceptionMiddleware>();
+            //app.UseExceptionHandler(a => a.Run(async context =>
+            //{
+            //    var exceptionHandlerPathFeature = context.Features.Get<IExceptionHandlerPathFeature>();
+            //    var exception = exceptionHandlerPathFeature.Error;
+            //    await context.Response.WriteAsJsonAsync(new
+            //    {
+            //        error = exception.Message,
+
+            //    });
+            //}));
             app.UseRouting();
 
             // global cors policy
@@ -109,7 +112,7 @@ namespace ATTM_API
                 .SetIsOriginAllowed(original => true)
                 .AllowCredentials());
             // custom jwt auth middleware
-            app.UseMiddleware<JwtMiddleware>();
+            
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
