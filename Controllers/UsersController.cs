@@ -5,12 +5,13 @@ using Microsoft.AspNetCore.Cors;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
 using ATTM_API.Models.Entities;
+using ATTM_API.Helpers;
 
 namespace ATTM_API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UsersController : ControllerBase
+    public class UsersController : TransformResponse
     {
         private UserService _userService;
         
@@ -25,10 +26,7 @@ namespace ATTM_API.Controllers
         {
             var response = _userService.Authenticate(model);
 
-            if (response == null)
-                return BadRequest(new { message = "Username or password is incorrect" });
-
-            return Ok(response);
+            return Transform(response);
         }
 
         [Authorize]
@@ -40,19 +38,10 @@ namespace ATTM_API.Controllers
         }
 
         [HttpPost("changepassword")]
-        public async Task<ActionResult<JObject>> ChangePassword([FromBody] ChangePasswordData changePasswordData)
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordData changePasswordData)
         {
             var response = await _userService.ChangePassword(changePasswordData);
-            if (response == null) return StatusCode(500, $"Internal server error.");
-            var result = response.GetValue("result").ToString();
-            if (result.Equals("success"))
-            {
-                return StatusCode(200, response);
-            }
-            else
-            {
-                return StatusCode(500, response);
-            }
+            return Transform(response);
         }
     }
 }

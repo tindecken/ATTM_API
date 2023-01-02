@@ -70,10 +70,10 @@ namespace ATTM_API.Middlewares
                 }
             }
             message.Append($"\t{ex}");
-
-            responseData.Message = message.ToString();
-            
             Logger.Error(message.ToString());
+            
+            responseData.Message = ex.Message;
+            
             await httpContext.Response.WriteAsync(JsonConvert.SerializeObject(responseData), Encoding.UTF8);
             return;
         }

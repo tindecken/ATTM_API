@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using ATTM_API.Models.Entities;
 using System.Text.Unicode;
 using Microsoft.AspNetCore.Http;
+using System.Net;
 
 namespace ATTM_API.Services
 {
@@ -36,14 +37,14 @@ namespace ATTM_API.Services
             _users = database.GetCollection<User>(dbSettings.UsersCollectionName);
         }
 
-        public AuthenticateResponse Authenticate(AuthenticateRequest model)
+        public ResponseData Authenticate(AuthenticateRequest model)
         {
             Logger.Info($"User: {JsonConvert.SerializeObject(model)}");
-
+            ResponseData responseData = new ResponseData();
             var user = _users.Find<User>(user => user.Username == model.Username).FirstOrDefault();
             // return null if user not found
             if (user == null) return null;
-
+            
             byte[] data = Convert.FromBase64String(user.Password);
             MD5 md5 = MD5.Create();
             var tripDes = TripleDES.Create();
@@ -58,42 +59,51 @@ namespace ATTM_API.Services
             {
                 // authentication successful so generate jwt token
                 var token = generateJwtToken(user);
-
-                return new AuthenticateResponse(user, token);
+                var response = new AuthenticateResponse(user, token);
+                responseData.Data = response;
+                responseData.Success = true;
+                responseData.Message = "Login successfully";
             }
             else
             {
-                return null;
+                responseData.Success = false;
+                responseData.Message = "Username or password is incorrect";
+                responseData.StatusCode = HttpStatusCode.BadRequest;
             }
+            return responseData;
         }
 
-        public async Task<JObject> ChangePassword(ChangePasswordData changePasswordData)
+        public async Task<ResponseData> ChangePassword(ChangePasswordData changePasswordData)
         {
+            var responseData = new ResponseData();
             // Get regression test
             JObject result = new JObject();
 
             // Check New Password and Confirm Password is the same
             if (!changePasswordData.NewPassword.Equals(changePasswordData.ConfirmNewPassword))
             {
-                result.Add("result", "error");
-                result.Add("message", "New password and confirm password are not the same!");
-                return result;
+                responseData.Success = false;
+                responseData.Message = "New password and confirm password are not the same!";
+                responseData.StatusCode = HttpStatusCode.BadRequest;
+                return responseData;
             }
 
             // Check if CurrentPassword is the same with new Password
             if (changePasswordData.CurrentPassword.Equals(changePasswordData.NewPassword))
             {
-                result.Add("result", "error");
-                result.Add("message", "Current password and new password are the same!");
-                return result;
+                responseData.Success = false;
+                responseData.Message = "Current password and new password are the same!";
+                responseData.StatusCode = HttpStatusCode.BadRequest;
+                return responseData;
             }
 
             var user = _users.Find<User>(user => user.Id == changePasswordData.UserId).FirstOrDefault();
             if (user == null)
             {
-                result.Add("result", "error");
-                result.Add("message", "User not found!");
-                return result;
+                responseData.Success = false;
+                responseData.Message = "User not found!";
+                responseData.StatusCode = HttpStatusCode.BadRequest;
+                return responseData;
             }
 
             //Check current password is correct or not
@@ -109,9 +119,10 @@ namespace ATTM_API.Services
 
             if (!decryptedPassword.Equals(changePasswordData.CurrentPassword))
             {
-                result.Add("result", "error");
-                result.Add("message", "Current password is incorrect!");
-                return result;
+                responseData.Success = false;
+                responseData.Message = "Current password is incorrect!";
+                responseData.StatusCode = HttpStatusCode.BadRequest;
+                return responseData;
             }
 
             // Change password
@@ -127,12 +138,11 @@ namespace ATTM_API.Services
             var filter = Builders<User>.Filter.Eq("Id", changePasswordData.UserId);
             var update = Builders<User>.Update.Set("Password", Convert.ToBase64String(resultArray));
             await _users.UpdateOneAsync(filter, update);
-            
 
-            result.Add("result", "success");
-            result.Add("data", null);
-            result.Add("message", $"Change password successful.");
-            return result;
+            responseData.Success = true;
+            responseData.Message = "Change password successfully!";
+            responseData.StatusCode = HttpStatusCode.OK;
+            return responseData;
         }
 
         public List<User> GetAll() =>

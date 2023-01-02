@@ -6,12 +6,14 @@ using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using CommonModels;
+using ATTM_API.Models.Entities;
+using ATTM_API.Helpers;
 
 namespace ATTM_API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class KeywordsController : ControllerBase
+    public class KeywordsController : TransformResponse
     {
         private readonly KeywordService _keywordService;
 
@@ -39,6 +41,18 @@ namespace ATTM_API.Controllers
             {
                 return StatusCode(500, response);
             }
+        }
+        [HttpPost("getkeywordcode")]
+        public async Task<IActionResult> GetKeywordCode([FromBody] CategoryFeatureKeywordData keywordInfo)
+        {
+            var response = await _keywordService.GetKeywordCode(keywordInfo);
+            return Transform(response);
+        }
+        [HttpPost("getkeywordusage")]
+        public async Task<IActionResult> GetKeywordUsage([FromBody] CategoryFeatureKeywordData keywordInfo)
+        {
+            var response = await _keywordService.GetKeywordUsage(keywordInfo);
+            return Transform(response);
         }
     }
 }

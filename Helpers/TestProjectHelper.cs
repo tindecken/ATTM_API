@@ -22,6 +22,10 @@ using CommonModels;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
+using ATTM_API.Models.Entities;
+using System.Net;
+using MongoDB.Driver.Core.Misc;
+using System.Text.Json.Nodes;
 
 namespace ATTM_API.Helpers
 {
@@ -1320,6 +1324,40 @@ namespace ATTM_API.Helpers
                 return char.ToUpper(str[0]) + str.Substring(1);
 
             return str.ToUpper();
+        }
+        public async Task<ResponseData> GetKeywordCode(CategoryFeatureKeywordData keywordInfo) {
+            ResponseData responseData = new ResponseData();
+            if (!Directory.Exists(_appSettings.TestProject))
+            {
+                responseData.Success = false;
+                responseData.StatusCode = HttpStatusCode.BadRequest;
+                responseData.Message = $"Not found Test Project folder: {_appSettings.TestProject}";
+                return responseData;
+            }
+            //Keyword feature
+            var featureFile = Path.Combine(_appSettings.TestProject, "Keywords", keywordInfo.CategoryName, keywordInfo.FeatureName + ".cs");
+            if (!File.Exists(featureFile)) {
+                responseData.Success = false;
+                responseData.StatusCode = HttpStatusCode.BadRequest;
+                responseData.Message = $@"Not found feature file: {featureFile}";
+                return responseData;
+            };
+            string[] lines = File.ReadAllLines(featureFile);
+            StringBuilder sb = new StringBuilder();
+            foreach (var line in lines) {
+                sb.AppendLine(line);
+            }
+            var keywordLineIndex = Array.FindIndex(lines, line => line.Contains($"public void {keywordInfo.KeywordName}"));
+
+            JObject data = new JObject();
+            data.Add("File", featureFile);
+            data.Add("Index", keywordLineIndex + 1);
+            data.Add("Code", sb.ToString());
+            
+            responseData.Data = data;
+            responseData.Success = true;
+            responseData.Message = "Success";
+            return responseData;
         }
     }
 
